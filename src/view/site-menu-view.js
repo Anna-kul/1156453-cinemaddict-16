@@ -1,19 +1,22 @@
-export const createSiteMenuTemplate = () => (
+export const createNavigationMenuTemplate = (siteMenu) => (
   `<nav class="main-navigation">
     <div class="main-navigation__items">
       <a href="#all" class="main-navigation__item">All movies</a>
-      <a href="#watchlist" class="main-navigation__item">Watchlist <span class="main-navigation__item-count">13</span></a>
-      <a href="#history" class="main-navigation__item">History <span class="main-navigation__item-count">4</span></a>
-      <a href="#favorites" class="main-navigation__item">Favorites <span class="main-navigation__item-count">8</span></a>
+  ${siteMenu.reduce((htmlString, item) => {
+    htmlString += `<a href="#watchlist" class="main-navigation__item">${item.title} <span class="main-navigation__item-count">${item.count}</span></a>`;
+    return htmlString;
+  }, '')}
     </div>
     <a href="#stats" class="main-navigation__additional main-navigation__additional--active">Stats</a>
   </nav>`
 );
-export const createFilterTemplate = () => (
+export const createFilterTemplate = (filter) => (
   `<ul class="sort">
-  <li><a href="#" class="sort__button sort__button--active">Sort by default</a></li>
-  <li><a href="#" class="sort__button">Sort by date</a></li>
-  <li><a href="#" class="sort__button">Sort by rating</a></li>
+  ${filter.reduce((htmlString, item) => {
+    htmlString += `<li><a href="#" class="sort__button${item.active ? ' sort__button--active': ''}">${item.title}</a></li>`;
+    return htmlString;
+  }, '')}
+ 
 </ul>`
 );
 
