@@ -226,7 +226,7 @@ export const generateCardFilm = () => ({
   releaseYear: getRandomReleaseYear(),
   description: getRandomDescription(),
   duration: getRandomDuration(),
-  genre: Array.from({length: getRandomInteger(1, 4)}, getRandomGenre),
+  genre: Array.from({length: getRandomInteger(1, 3)}, getRandomGenre),
   comments: [generateComment(), generateComment(), generateComment()],
   isWatchlist: Boolean(getRandomInteger(0, 1)),
   isWatched: Boolean(getRandomInteger(0, 1)),
