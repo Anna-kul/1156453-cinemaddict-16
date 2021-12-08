@@ -1,3 +1,5 @@
+import {createElement} from '../render.js';
+
 export const createFilmListContainer = () => (
   `<section class="films">
     <section class="films-list">
@@ -9,8 +11,27 @@ export const createFilmListContainer = () => (
 
   </section>`
 );
+export default class FilmListContainerView {
+  #element = null;
 
-export const createCardFilmTemplate = (film, index) => {
+  get elem() {
+    if (!this.#element) {
+      this.#element = createElement(this.template);
+    }
+
+    return this.#element;
+  }
+
+  get template() {
+    return createFilmListContainer();
+  }
+
+  removeElement() {
+    this.#element = null;
+  }
+}
+
+const createCardFilmTemplate = (film, index) => {
   const watchlistClassName = film.isWatchlist
     ? 'film-card__controls-item--active film-card__controls-item--add-to-watchlist'
     : 'film-card__controls-item--add-to-watchlist';
@@ -23,7 +44,7 @@ export const createCardFilmTemplate = (film, index) => {
     ? 'film-card__controls-item--active film-card__controls-item--favorite'
     : 'film-card__controls-item--favorite';
 
-  return ` <article class="film-card" data-id=${index}>
+  return `<article class="film-card" data-id=${index}>
         <a class="film-card__link">
           <h3 class="film-card__title">${film.title}</h3>
           <p class="film-card__rating">${film.rating}</p>
@@ -43,3 +64,31 @@ export const createCardFilmTemplate = (film, index) => {
         </div>
       </article>`;
 };
+
+export class CardFilmView {
+  #element = null;
+  #film = null;
+  #index = null;
+
+  constructor(film, index){
+    this.#film = film;
+    this.#index = index;
+  }
+
+  get elem() {
+    if (!this.#element) {
+      this.#element = createElement(this.template);
+    }
+
+    return this.#element;
+  }
+
+  get template() {
+    return createCardFilmTemplate(this.#film, this.#index);
+
+  }
+
+  removeElement() {
+    this.#element = null;
+  }
+}

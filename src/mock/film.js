@@ -110,7 +110,7 @@ export const getRandomEmoji = () => {
   return emoji[randomIndex];
 };
 
-const getRandomAutor = () => {
+export const getRandomAutor = () => {
   const autor = [
     'Anna',
     'Julia',
@@ -123,17 +123,16 @@ const getRandomAutor = () => {
   return autor[randomIndex];
 };
 
-const getRandomMessage = () => {
-  const message = [
-    'In rutrum ac purus sit amet tempus.',
-    'Aliquam erat volutpat. Nunc fermentum tortor ac porta dapibus',
-    'Sed sed nisi sed augue convallis suscipit in sed felis.',
-    'Sed blandit, eros vel aliquam faucibus, purus ex euismod diam, eu luctus nunc ante ut dui',
-    'Phasellus eros mauris, condimentum sed nibh vitae.'
+const getRandomCommentText = () => {
+  const commentText = [
+    'Interesting setting and a good cast',
+    'Booooooooooring',
+    'Very very old. Meh',
+    'Almost two hours? Seriously?',
   ];
-  const randomIndex = getRandomInteger(0, message.length - 1);
+  const randomIndex = getRandomInteger(0, commentText.length - 1);
 
-  return message[randomIndex];
+  return commentText[randomIndex];
 };
 
 const getRandomAge = () => {
@@ -212,11 +211,13 @@ const getRandomCountry = () => {
 
   return country[randomIndex];
 };
-const generateComment = () => ({
+
+const generateComments = () => ({
+  commentText: getRandomCommentText(),
   emoji: getRandomEmoji(),
-  date: dayjs(new Date()).format('YYYY MMMM D', 'H m'),
-  autor: getRandomAutor(),
-  message: getRandomMessage()
+  commentAutor: getRandomAutor(),
+  commentDate: dayjs(new Date()).format('YYYY MMMM D', 'H m'),
+  deleteButton: ''
 });
 
 export const generateCardFilm = () => ({
@@ -227,7 +228,7 @@ export const generateCardFilm = () => ({
   description: getRandomDescription(),
   duration: getRandomDuration(),
   genre: Array.from({length: getRandomInteger(1, 3)}, getRandomGenre),
-  comments: [generateComment(), generateComment(), generateComment()],
+  comments: [generateComments(), generateComments(), generateComments()],
   isWatchlist: Boolean(getRandomInteger(0, 1)),
   isWatched: Boolean(getRandomInteger(0, 1)),
   isFavorite: Boolean(getRandomInteger(0, 1)),
