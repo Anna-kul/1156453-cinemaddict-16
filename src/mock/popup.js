@@ -1,11 +1,6 @@
+
 // import dayjs from 'dayjs';
 // import {
-//   getRandomTitle,
-//   getRandomRating,
-//   getRandomPoster,
-//   getRandomDuration,
-//   getRandomGenre,
-//   getRandomDescription,
 //   getRandomEmoji,
 //   getRandomAutor
 // }
@@ -107,7 +102,7 @@
 //   return commentText[randomIndex];
 // };
 
-// const generateComments = () => ({
+// export const generateComments = () => ({
 //   commentText: getRandomCommentText(),
 //   emoji: getRandomEmoji(),
 //   commentAutor: getRandomAutor(),
