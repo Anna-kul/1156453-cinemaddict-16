@@ -9,7 +9,7 @@ import MenuNavigationView from './view/site-menu-view.js';
 import {FilterMenuView} from './view/site-menu-view.js';
 import PopupView from './view/popup-view.js';
 
-const FILM_COUNT = 15;
+const FILM_COUNT = 22;
 export const films = Array.from({length: FILM_COUNT}, generateCardFilm);
 
 
@@ -18,16 +18,16 @@ const siteMainElement = document.querySelector('.main');
 
 const header = document.querySelector('.header');
 const userRankView = new UserRankView();
-render(header, userRankView.elem, RenderPosition.BEFOREEND);
+render(header, userRankView, RenderPosition.BEFOREEND);
 
 const menuNavigation = new MenuNavigationView(generateNavigationSiteMenu());
-render(siteMainElement, menuNavigation.elem, RenderPosition.BEFOREEND);
+render(siteMainElement, menuNavigation, RenderPosition.BEFOREEND);
 
 const filterMenu = new FilterMenuView(generateFilters());
-render(siteMainElement, filterMenu.elem, RenderPosition.BEFOREEND);
+render(siteMainElement, filterMenu, RenderPosition.BEFOREEND);
 
 const filmListContainer = new FilmListContainerView();
-render(siteMainElement, filmListContainer.elem, RenderPosition.BEFOREEND);
+render(siteMainElement, filmListContainer, RenderPosition.BEFOREEND);
 const filmContainer = document.querySelector('.films-list__container');
 
 
@@ -39,20 +39,26 @@ let curentCardCount = 0;
 const showCards = () => {
 
   for (let i = curentCardCount; i < curentCardCount + 5; i++) {
+    //если фильмов не осталось, то не выводить
+    if(i >= films.length) {
+      curentCardCount = films.length;
+      break;
+    }
     const cardFilmView = new CardFilmView(films[i], i);
     // при клике на фильм открыть попап
-    cardFilmView.elem.querySelector('.film-card__link').addEventListener('click', () =>{
+    cardFilmView.setClickHandler(() => {
       // какой фильм показать в попапе
       popupView.film = films[i];
       //закрыть попап при клике на крестик
-      popupView.elem.querySelector('.film-details__close-btn').addEventListener('click', () => {
+      popupView.setClickHandler(() => {
         document.body.removeChild(popupView.elem);
         document.body.classList.remove('hide-overflow');
+        popupView.removeElement();
       });
       document.body.appendChild(popupView.elem);
       document.body.classList.add('hide-overflow');
     });
-    render(filmContainer, cardFilmView.elem, RenderPosition.BEFOREEND);
+    render(filmContainer, cardFilmView, RenderPosition.BEFOREEND);
   }
   curentCardCount += 5;
 
@@ -61,14 +67,14 @@ const showCards = () => {
 
 showCards();
 
-document.addEventListener('click', (evt) =>{
-  if(evt.target.classList.contains('films-list__show-more')){
-    showCards();
-    if(curentCardCount >= films.length){
-      document.querySelector('.films-list__show-more').remove();
-    }
+
+const btnShowMore = new BtnShowMoreView();
+btnShowMore.setClickHandler(() => {
+  showCards();
+  // если все фильмы выведены удалить кнопку
+  if(curentCardCount >= films.length){
+    btnShowMore.elem.remove();
   }
 });
 
-const btnShowMore = new BtnShowMoreView();
-render(siteMainElement, btnShowMore.elem, RenderPosition.BEFOREEND);
+render(siteMainElement, btnShowMore, RenderPosition.BEFOREEND);

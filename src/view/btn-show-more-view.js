@@ -1,22 +1,27 @@
-import {createElement} from '../render.js';
+import AbstractView  from './abstract-view.js';
 const createBtnShowMore = () =>  '<button class="films-list__show-more">Show more</button>';
 
-export default class BtnShowMoreView {
-  #element = null;
-
-  get elem() {
-    if (!this.#element) {
-      this.#element = createElement(this.template);
-    }
-
-    return this.#element;
-  }
-
+export default class BtnShowMoreView extends AbstractView {
   get template() {
     return createBtnShowMore();
   }
 
-  removeElement() {
-    this.#element = null;
+  setClickHandler = (callback) => {
+    // Мы могли бы сразу передать callback в addEventListener,
+    // но тогда бы для удаления обработчика в будущем,
+    // нам нужно было бы производить это снаружи, где-то там,
+    // где мы вызывали setClickHandler, что не всегда удобно
+
+    // 1. Поэтому колбэк мы запишем во внутреннее свойство
+    this._callback.click = callback;
+    // 2. В addEventListener передадим абстрактный обработчик
+    this.elem.addEventListener('click', this.#clickHandler);
+  }
+
+  #clickHandler = (evt) => {
+    evt.preventDefault();
+    // 3. А внутри абстрактного обработчика вызовем колбэк
+    this._callback.click();
   }
 }
+

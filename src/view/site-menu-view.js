@@ -1,8 +1,9 @@
-import {createElement} from '../render.js';
-export default class MenuNavigationView{
-  #element = null;
+import AbstractView  from './abstract-view.js';
+export default class MenuNavigationView extends AbstractView {
   #siteMenu = null;
+
   constructor (siteMenu) {
+    super();
     this.#siteMenu = siteMenu;
   }
 
@@ -21,24 +22,13 @@ export default class MenuNavigationView{
   </nav>`;
   }
 
-  get elem() {
-    // если элемент не найден, создаем новый элемент
-    if(!this.#element) {
-      this.#element = createElement(this.template);
-    }
-    return this.#element;
-  }
-
-  removeElem() {
-    this.#element = null;
-  }
 }
 
-export class FilterMenuView {
-  #element = null;
+export class FilterMenuView extends AbstractView{
   #filter = null;
 
   constructor(filter){
+    super();
     this.#filter = filter;
   }
 
@@ -51,17 +41,5 @@ export class FilterMenuView {
     }, '')}
  
 </ul>`;
-  }
-
-  get elem() {
-    // если элемент не найден, создаем новый элемент
-    if(!this.#element) {
-      this.#element = createElement(this.template);
-    }
-    return this.#element;
-  }
-
-  removeElem() {
-    this.#element = null;
   }
 }

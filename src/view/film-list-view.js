@@ -1,4 +1,4 @@
-import {createElement} from '../render.js';
+import AbstractView  from './abstract-view.js';
 
 export const createFilmListContainer = () => (
   `<section class="films">
@@ -11,23 +11,10 @@ export const createFilmListContainer = () => (
 
   </section>`
 );
-export default class FilmListContainerView {
-  #element = null;
-
-  get elem() {
-    if (!this.#element) {
-      this.#element = createElement(this.template);
-    }
-
-    return this.#element;
-  }
+export default class FilmListContainerView extends AbstractView{
 
   get template() {
     return createFilmListContainer();
-  }
-
-  removeElement() {
-    this.#element = null;
   }
 }
 
@@ -65,22 +52,14 @@ const createCardFilmTemplate = (film, index) => {
       </article>`;
 };
 
-export class CardFilmView {
-  #element = null;
+export class CardFilmView extends AbstractView {
   #film = null;
   #index = null;
 
   constructor(film, index){
+    super();
     this.#film = film;
     this.#index = index;
-  }
-
-  get elem() {
-    if (!this.#element) {
-      this.#element = createElement(this.template);
-    }
-
-    return this.#element;
   }
 
   get template() {
@@ -88,7 +67,21 @@ export class CardFilmView {
 
   }
 
-  removeElement() {
-    this.#element = null;
+  setClickHandler = (callback) => {
+    // Мы могли бы сразу передать callback в addEventListener,
+    // но тогда бы для удаления обработчика в будущем,
+    // нам нужно было бы производить это снаружи, где-то там,
+    // где мы вызывали setClickHandler, что не всегда удобно
+
+    // 1. Поэтому колбэк мы запишем во внутреннее свойство
+    this._callback.click = callback;
+    // 2. В addEventListener передадим абстрактный обработчик
+    this.elem.querySelector('.film-card__link').addEventListener('click', this.#clickHandler);
+  }
+
+  #clickHandler = (evt) => {
+    evt.preventDefault();
+    // 3. А внутри абстрактного обработчика вызовем колбэк
+    this._callback.click();
   }
 }
