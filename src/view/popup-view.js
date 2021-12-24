@@ -1,5 +1,5 @@
 import AbstractView  from './abstract-view.js';
-
+import { CategoryType } from '../const.js';
 
 const createCommentPopupTemplate = (film) => (
   `<div class="film-details__bottom-container">
@@ -62,15 +62,15 @@ const createCommentPopupTemplate = (film) => (
 const createPopupTemplate = (film) => {
   const watchlistClassName = film.isWatchlist
     ? 'film-details__control-button--active film-details__control-button--watchlist'
-    : 'film-details__control-button';
+    : '';
 
   const watchedClassName = film.isWatched
     ? 'film-details__control-button--active film-details__control-button--watched'
-    : 'film-details__control-button';
+    : '';
 
   const favoriteClassName = film.isFavorite
     ? 'film-details__control-button--active film-details__control-button--favorite'
-    : 'film-details__control-button';
+    : '';
 
   const commentPopupTemplate = createCommentPopupTemplate(film);
 
@@ -139,9 +139,9 @@ const createPopupTemplate = (film) => {
         </div>
   
         <section class="film-details__controls">
-          <button type="button" class="film-details__control-button ${watchlistClassName}" id="watchlist" name="watchlist">Add to watchlist</button>
-          <button type="button" class="film-details__control-button ${watchedClassName}" id="watched" name="watched">Already watched</button>
-          <button type="button" class="film-details__control-button ${favoriteClassName}" id="favorite" name="favorite">Add to favorites</button>
+          <button type="button" class="film-details__control-button ${watchlistClassName}" id="watchlist" data-category ="${CategoryType.WATCHLIST}" name="watchlist">Add to watchlist</button>
+          <button type="button" class="film-details__control-button ${watchedClassName}" id="watched" data-category ="${CategoryType.WATCHED}" name="watched">Already watched</button>
+          <button type="button" class="film-details__control-button ${favoriteClassName}" id="favorite" data-category ="${CategoryType.FAVORIT}" name="favorite">Add to favorites</button>
         </section>
       </div>
       ${commentPopupTemplate}
@@ -181,5 +181,30 @@ export default class PopupView extends AbstractView {
     evt.preventDefault();
     // 3. А внутри абстрактного обработчика вызовем колбэк
     this._callback.click();
+  }
+
+  // #escKeyPressHandler = (evt) => {
+  //   if(evt.key === 'Escape' || evt.key === 'Esc') {
+  //     evt.preventDefault();
+  //     document.removeEventListener('keydown', this.#escKeyPressHandler);
+  //     this._callback.escKeyPressHandler();
+  //   }
+  // }
+
+  // setEscKeyPresshandler = (callback) => {
+  //   this._callback.escKeyPressHandler = callback;
+  //   document.addEventListener('keydown', this.#escKeyPressHandler);
+  // }
+
+  setCategoryClickHandler = (callback) => {
+    this._callback.categoryClick = callback;
+    this.elem.addEventListener('click', this.#categoryClickHandler);
+  }
+
+  #categoryClickHandler = (evt) => {
+    if(evt.target.classList.contains('film-details__control-button')){
+      this._callback.categoryClick(evt.target.dataset.category, this.#film);
+    }
+
   }
 }

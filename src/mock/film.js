@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import {nanoid} from 'nanoid';
 
 const getRandomInteger = (a = 0, b = 1) => {
   const lower = Math.ceil(Math.min(a, b));
@@ -221,6 +222,7 @@ const generateComments = () => ({
 });
 
 export const generateCardFilm = () => ({
+  id: nanoid(),
   poster: getRandomPoster(),
   title: getRandomTitle(),
   rating: getRandomRating(),
