@@ -183,18 +183,18 @@ export default class PopupView extends AbstractView {
     this._callback.click();
   }
 
-  // #escKeyPressHandler = (evt) => {
-  //   if(evt.key === 'Escape' || evt.key === 'Esc') {
-  //     evt.preventDefault();
-  //     document.removeEventListener('keydown', this.#escKeyPressHandler);
-  //     this._callback.escKeyPressHandler();
-  //   }
-  // }
+  #escKeyPressHandler = (evt) => {
+    if(evt.key === 'Escape' || evt.key === 'Esc') {
+      evt.preventDefault();
+      document.removeEventListener('keydown', this.#escKeyPressHandler);
+      this._callback.escKeyPressHandler();
+    }
+  }
 
-  // setEscKeyPresshandler = (callback) => {
-  //   this._callback.escKeyPressHandler = callback;
-  //   document.addEventListener('keydown', this.#escKeyPressHandler);
-  // }
+  setEscKeyPresshandler = (callback) => {
+    this._callback.escKeyPressHandler = callback;
+    document.addEventListener('keydown', this.#escKeyPressHandler);
+  }
 
   setCategoryClickHandler = (callback) => {
     this._callback.categoryClick = callback;

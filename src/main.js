@@ -7,7 +7,7 @@ import {generateNavigationSiteMenu, generateFilters} from './mock/site-menu.js';
 import { MovieListPresenter } from './presenter/movie-list-presenter.js';
 import PopupView from './view/popup-view.js';
 
-const FILM_COUNT = 22;
+const FILM_COUNT = 0;
 export const films = Array.from({length: FILM_COUNT}, generateCardFilm);
 
 const header = document.querySelector('.header');
