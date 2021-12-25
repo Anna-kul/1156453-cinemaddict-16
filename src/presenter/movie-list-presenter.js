@@ -3,6 +3,7 @@ import BtnShowMoreView from '../view/btn-show-more-view.js';
 import { CategoryType } from '../const.js';
 import {render, RenderPosition, remove} from '../render.js';
 import {MoviePresenter} from './movie-presenter.js';
+import LoadingView from '../view/loading-view.js';
 
 export class MovieListPresenter {
     #filmContainer = null;
@@ -13,6 +14,7 @@ export class MovieListPresenter {
     #popupView = null;
 
     #filmListContainer = new FilmListContainerView();
+    #noFilms = new LoadingView();
 
     constructor(siteMainElement, popupView){
       this.#siteMainElement = siteMainElement;
@@ -22,10 +24,10 @@ export class MovieListPresenter {
     init = (films) => {
       this.#films = [...films];
       this.#filmContainer = this.#filmListContainer.elem.querySelector('.films-list__container');
-      // if(films.length === 0) {
-      //   this.#renderNoFilms();
-      //   return;
-      // }
+      if(films.length === 0) {
+        this.#renderNoFilms();
+        return;
+      }
       render(this.#siteMainElement, this.#filmListContainer, RenderPosition.BEFOREEND);
       let curentCardCount = 0;
       //показывает следующие 5 фильмов
@@ -71,7 +73,7 @@ export class MovieListPresenter {
       document.body.appendChild(this.#popupView.elem);
       document.body.classList.add('hide-overflow');
       this.#popupView.setCategoryClickHandler(this.#popupCategoryClickHandler);
-      //this.#popupView.setEscKeyPresshandler(this.#escKeydownHandler);
+      this.#popupView.setEscKeyPresshandler(this.#escKeydownHandler);
     }
 
     #closePopup = () => {
@@ -119,13 +121,13 @@ export class MovieListPresenter {
       }
     }
 
-    // #escKeydownHandler = () => {
-    //   this.#closePopup();
-    // }
+    #escKeydownHandler = () => {
+      this.#closePopup();
+    }
 
-    // #renderNoFilms = () => {
-
-    // }
+    #renderNoFilms = () => {
+      render(this.#siteMainElement, this.#noFilms, RenderPosition.BEFOREEND);
+    }
 
     #clearFilmList = () => {
       this.#moviePresenter.forEach((presenter) => presenter.destroy());
