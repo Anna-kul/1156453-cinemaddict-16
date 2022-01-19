@@ -2,12 +2,12 @@ import {generateCardFilm} from './mock/film.js';
 import UserRankView from './view/users-rank-view.js';
 import MenuNavigationView from './view/site-menu-view.js';
 import {FilterMenuView} from './view/site-menu-view.js';
-import {render, RenderPosition} from './render.js';
+import {render, RenderPosition} from './utils/render.js';
 import {generateNavigationSiteMenu, generateFilters} from './mock/site-menu.js';
 import { MovieListPresenter } from './presenter/movie-list-presenter.js';
 import PopupView from './view/popup-view.js';
 
-const FILM_COUNT = 0;
+const FILM_COUNT = 22;
 export const films = Array.from({length: FILM_COUNT}, generateCardFilm);
 
 const header = document.querySelector('.header');

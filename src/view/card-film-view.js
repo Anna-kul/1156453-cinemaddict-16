@@ -1,5 +1,6 @@
-import AbstractView  from './abstract-view.js';
-import { CategoryType } from '../const.js';
+import AbstractView from './abstract-view.js';
+import SmartView  from './smart-view.js';
+import { CategoryType } from '../utils/const.js';
 
 
 export const createFilmListContainer = () => (
@@ -13,7 +14,7 @@ export const createFilmListContainer = () => (
 
   </section>`
 );
-export default class FilmListContainerView extends AbstractView{
+export default class FilmListContainerView extends AbstractView {
 
   get template() {
     return createFilmListContainer();
@@ -21,17 +22,11 @@ export default class FilmListContainerView extends AbstractView{
 }
 
 const createCardFilmTemplate = (film) => {
-  const watchlistClassName = film.isWatchlist
-    ? 'film-card__controls-item--active film-card__controls-item--add-to-watchlist'
-    : 'film-card__controls-item--add-to-watchlist';
+  const watchlistClassName = film.isWatchlist ? 'film-card__controls-item--active' : '';
 
-  const watchedClassName = film.isWatched
-    ? 'film-card__controls-item--active film-card__controls-item--mark-as-watched'
-    : 'film-card__controls-item--mark-as-watched';
+  const watchedClassName = film.isWatched ? 'film-card__controls-item--active' : '';
 
-  const favoriteClassName = film.isFavorite
-    ? 'film-card__controls-item--active film-card__controls-item--favorite'
-    : 'film-card__controls-item--favorite';
+  const favoriteClassName = film.isFavorite ? 'film-card__controls-item--active' : '';
 
   return `<article class="film-card" data-id=${film.id}>
         <a class="film-card__link">
@@ -47,14 +42,14 @@ const createCardFilmTemplate = (film) => {
           <span class="film-card__comments">${film.comments.length} comments</span>
         </a>
         <div class="film-card__controls">
-          <button class="film-card__controls-item ${watchlistClassName}" type="button" data-category ="${CategoryType.WATCHLIST}">Add to watchlist</button>
-          <button class="film-card__controls-item ${watchedClassName}" type="button" data-category ="${CategoryType.WATCHED}">Mark as watched</button>
-          <button class="film-card__controls-item ${favoriteClassName}" type="button" data-category ="${CategoryType.FAVORIT}">Mark as favorite</button>
+          <button class="film-card__controls-item film-card__controls-item--add-to-watchlist ${watchlistClassName}" type="button" data-category ="${CategoryType.WATCHLIST}">Add to watchlist</button>
+          <button class="film-card__controls-item film-card__controls-item--mark-as-watched ${watchedClassName}" type="button" data-category ="${CategoryType.WATCHED}">Mark as watched</button>
+          <button class="film-card__controls-item film-card__controls-item--favorite ${favoriteClassName}" type="button" data-category ="${CategoryType.FAVORIT}">Mark as favorite</button>
         </div>
       </article>`;
 };
 
-export class CardFilmView extends AbstractView {
+export class CardFilmView extends SmartView {
   #film = null;
 
   constructor(film){
@@ -95,6 +90,42 @@ export class CardFilmView extends AbstractView {
       this._callback.categoryClick(evt.target.dataset.category, this.#film);
     }
 
+  }
+
+  setFavoriteClickHandler = (callback) => {
+    this._callback.favoriteClick = callback;
+    this.elem.querySelector('.film-card__controls-item--favorite').addEventListener('click', this.#favoriteClickHandler);
+  }
+
+  #favoriteClickHandler = (evt) => {
+    evt.preventDefault();
+    this._callback.favoriteClick();
+  }
+
+  setAlreadyWatchedClickHandler = (callback) => {
+    this._callback.alreadyWatchedClick = callback;
+    this.elem.querySelector('.film-card__controls-item--mark-as-watched').addEventListener('click', this.#alreadyWatchedClickHandler);
+  }
+
+  #alreadyWatchedClickHandler = (evt) => {
+    evt.preventDefault();
+    this._callback.alreadyWatchedClick();
+  }
+
+  setAddedToWatchlistClickHandler = (callback) => {
+    this._callback.addedToWatchlistClick = callback;
+    this.elem.querySelector('.film-card__controls-item--add-to-watchlist').addEventListener('click', this.#addedToWatchlistClickHandler);
+  }
+
+  #addedToWatchlistClickHandler = (evt) => {
+    evt.preventDefault();
+    this._callback.addedToWatchlistClick();
+  }
+
+  restoreHandlers = () => {
+    this.elem.querySelector('.film-card__controls-item--add-to-watchlist').addEventListener('click', this.#addedToWatchlistClickHandler);
+    this.elem.querySelector('.film-card__controls-item--mark-as-watched').addEventListener('click', this.#alreadyWatchedClickHandler);
+    this.elem.querySelector('.film-card__controls-item--favorite').addEventListener('click', this.#favoriteClickHandler);
   }
 }
 

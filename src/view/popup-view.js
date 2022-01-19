@@ -1,7 +1,7 @@
-import AbstractView  from './abstract-view.js';
-import { CategoryType } from '../const.js';
+import SmartView  from './smart-view.js';
+import { CategoryType } from '../utils/const.js';
 
-const createCommentPopupTemplate = (film) => (
+const createCommentPopupTemplate = (film, commentText = '', commentEmoji) => (
   `<div class="film-details__bottom-container">
   <section class="film-details__comments-wrap">
     <h3 class="film-details__comments-title">Comments <span class="film-details__comments-count">4</span></h3>
@@ -27,10 +27,12 @@ const createCommentPopupTemplate = (film) => (
     </ul>
 
     <div class="film-details__new-comment">
-      <div class="film-details__add-emoji-label"></div>
+      <div class="film-details__add-emoji-label">
+        ${commentEmoji ? `<img src="images/emoji/${commentEmoji}.png" width="55" height="55" alt="emoji-${commentEmoji}">` : ''}
+      </div>
 
       <label class="film-details__comment-label">
-        <textarea class="film-details__comment-input" placeholder="Select reaction below and write comment here" name="comment"></textarea>
+        <textarea class="film-details__comment-input" placeholder="Select reaction below and write comment here" name="comment">${commentText}</textarea>
       </label>
 
       <div class="film-details__emoji-list">
@@ -59,20 +61,20 @@ const createCommentPopupTemplate = (film) => (
 </div>`
 );
 
-const createPopupTemplate = (film) => {
+const createPopupTemplate = (film, commentText, commentEmoji) => {
   const watchlistClassName = film.isWatchlist
     ? 'film-details__control-button--active film-details__control-button--watchlist'
-    : '';
+    : 'film-details__control-button--watchlist';
 
   const watchedClassName = film.isWatched
     ? 'film-details__control-button--active film-details__control-button--watched'
-    : '';
+    : 'film-details__control-button--watched';
 
   const favoriteClassName = film.isFavorite
     ? 'film-details__control-button--active film-details__control-button--favorite'
-    : '';
+    : 'film-details__control-button--favorite';
 
-  const commentPopupTemplate = createCommentPopupTemplate(film);
+  const commentPopupTemplate = createCommentPopupTemplate(film, commentText, commentEmoji);
 
   return `<section class="film-details">
     <form class="film-details__inner" action="" method="get">
@@ -125,7 +127,7 @@ const createPopupTemplate = (film) => {
                 <td class="film-details__cell">${film.country}</td>
               </tr>
               <tr class="film-details__row">
-                <td class="film-details__term">${film.genre >1 ? 'Genres' : 'Genre' }</td>
+                <td class="film-details__term">${film.genre.length >1 ? 'Genres' : 'Genre' }</td>
                 <td class="film-details__cell">
                 
                   <span class="film-details__genre">${film.genre.join(', ')}</span></td>
@@ -150,37 +152,34 @@ const createPopupTemplate = (film) => {
   </section>`;
 };
 
-export default class PopupView extends AbstractView {
+export default class PopupView extends SmartView {
   #film = null;
 
-  get film(){
-    return this.#film;
-  }
-
-  set film (film) {
+  constructor (film) {
+    super();
     this.#film = film;
   }
 
   get template() {
-    return createPopupTemplate(this.#film);
+    return createPopupTemplate(this.#film, this._data.commentText, this._data.commentEmoji);
   }
 
-  setClickHandler = (callback) => {
+  setCloseBtnClickHandler = (callback) => {
     // Мы могли бы сразу передать callback в addEventListener,
     // но тогда бы для удаления обработчика в будущем,
     // нам нужно было бы производить это снаружи, где-то там,
     // где мы вызывали setClickHandler, что не всегда удобно
 
     // 1. Поэтому колбэк мы запишем во внутреннее свойство
-    this._callback.click = callback;
+    this._callback.closeButtonClickHandler = callback;
     // 2. В addEventListener передадим абстрактный обработчик
-    this.elem.querySelector('.film-details__close-btn').addEventListener('click', this.#clickHandler);
+    this.elem.querySelector('.film-details__close-btn').addEventListener('click', this.#closeButtonClickHandler);
   }
 
-  #clickHandler = (evt) => {
+  #closeButtonClickHandler = (evt) => {
     evt.preventDefault();
     // 3. А внутри абстрактного обработчика вызовем колбэк
-    this._callback.click();
+    this._callback.closeButtonClickHandler();
   }
 
   #escKeyPressHandler = (evt) => {
@@ -196,15 +195,64 @@ export default class PopupView extends AbstractView {
     document.addEventListener('keydown', this.#escKeyPressHandler);
   }
 
-  setCategoryClickHandler = (callback) => {
-    this._callback.categoryClick = callback;
-    this.elem.addEventListener('click', this.#categoryClickHandler);
+  // setCategoryClickHandler = (callback) => {
+  //   this._callback.categoryClick = callback;
+  //   this.elem.addEventListener('click', this.#categoryClickHandler);
+  // }
+
+  // #categoryClickHandler = (evt) => {
+  //   if(evt.target.classList.contains('film-details__control-button')){
+  //     this._callback.categoryClick(evt.target.dataset.category, this.#film);
+  //   }
+
+  // }
+
+  setFavoriteClickHandler = (callback) => {
+    this._callback.favoriteClick = callback;
+    this.elem.querySelector('.film-details__control-button--favorite').addEventListener('click', this.#favoriteClickHandler);
   }
 
-  #categoryClickHandler = (evt) => {
-    if(evt.target.classList.contains('film-details__control-button')){
-      this._callback.categoryClick(evt.target.dataset.category, this.#film);
-    }
+  #favoriteClickHandler = (evt) => {
+    evt.preventDefault();
+    this._callback.favoriteClick();
+  }
 
+  setAlreadyWatchedClickHandler = (callback) => {
+    this._callback.alreadyWatchedClick = callback;
+    this.elem.querySelector('.film-details__control-button--watched').addEventListener('click', this.#alreadyWatchedClickHandler);
+  }
+
+  #alreadyWatchedClickHandler = (evt) => {
+    evt.preventDefault();
+    this._callback.alreadyWatchedClick();
+  }
+
+  setAddedToWatchlistClickHandler = (callback) => {
+    this._callback.addedToWatchlistClick = callback;
+    this.elem.querySelector('.film-details__control-button--watchlist').addEventListener('click', this.#addedToWatchlistClickHandler);
+  }
+
+  setChangeHandler = (handler) => {
+    this._callback.changeHandler = handler;
+    this.elem.querySelector('.film-details__inner').addEventListener('change', this.#handleChange);
+  }
+
+  #addedToWatchlistClickHandler = (evt) => {
+    evt.preventDefault();
+    this._callback.addedToWatchlistClick();
+  }
+
+  #handleChange = (evt) => {
+    const formData = new FormData(evt.currentTarget);
+
+    this._callback.changeHandler(Object.fromEntries(formData));
+  }
+
+  restoreHandlers = () => {
+    this.elem.querySelector('.film-details__control-button--watchlist').addEventListener('click', this.#addedToWatchlistClickHandler);
+    this.elem.querySelector('.film-details__control-button--watched').addEventListener('click', this.#alreadyWatchedClickHandler);
+    this.elem.querySelector('.film-details__control-button--favorite').addEventListener('click', this.#favoriteClickHandler);
+    this.elem.querySelector('.film-details__inner').addEventListener('change', this.#handleChange);
+    this.elem.querySelector('.film-details__close-btn').addEventListener('click', this.#closeButtonClickHandler);
   }
 }
