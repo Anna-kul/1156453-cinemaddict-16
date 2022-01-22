@@ -126,6 +126,7 @@ export class CardFilmView extends SmartView {
     this.elem.querySelector('.film-card__controls-item--add-to-watchlist').addEventListener('click', this.#addedToWatchlistClickHandler);
     this.elem.querySelector('.film-card__controls-item--mark-as-watched').addEventListener('click', this.#alreadyWatchedClickHandler);
     this.elem.querySelector('.film-card__controls-item--favorite').addEventListener('click', this.#favoriteClickHandler);
+    this.elem.querySelector('.film-card__link').addEventListener('click', this.#clickHandler);
   }
 }
 
