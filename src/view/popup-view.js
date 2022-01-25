@@ -195,18 +195,6 @@ export default class PopupView extends SmartView {
     document.addEventListener('keydown', this.#escKeyPressHandler);
   }
 
-  // setCategoryClickHandler = (callback) => {
-  //   this._callback.categoryClick = callback;
-  //   this.elem.addEventListener('click', this.#categoryClickHandler);
-  // }
-
-  // #categoryClickHandler = (evt) => {
-  //   if(evt.target.classList.contains('film-details__control-button')){
-  //     this._callback.categoryClick(evt.target.dataset.category, this.#film);
-  //   }
-
-  // }
-
   setFavoriteClickHandler = (callback) => {
     this._callback.favoriteClick = callback;
     this.elem.querySelector('.film-details__control-button--favorite').addEventListener('click', this.#favoriteClickHandler);

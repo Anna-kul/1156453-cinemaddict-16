@@ -1,29 +1,35 @@
-import {films} from '../main.js';
+import {Sorting, Filter} from '../model/movies-model.js';
 
-export const generateNavigationSiteMenu = () => [
+export const generateNavigationSiteMenu = (movies) => [
   {
+    id: Filter.WATCHLIST,
     title: 'Watchlist',
-    count: films.filter((film) => film.isWatchlist).length
+    count: movies.filter((film) => film.isWatchlist).length
   },
   {
+    id: Filter.HISTORY,
     title: 'History',
-    count: films.filter((film) => film.isWatched).length
+    count: movies.filter((film) => film.isWatched).length
   },
   {
+    id: Filter.FAVORITES,
     title: 'Favorites',
-    count: films.filter((film) => film.isFavorite).length
+    count: movies.filter((film) => film.isFavorite).length
   }
 ];
 
-export const generateFilters = () => [
+export const generateSortings = () => [
   {
+    id: Sorting.DEFAULT,
     title: 'Sort by default',
     active: true,
   },
   {
+    id: Sorting.DATE,
     title: 'Sort by date',
   },
   {
+    id: Sorting.RATING,
     title: 'Sort by rating',
   }
 ];

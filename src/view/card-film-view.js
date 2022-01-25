@@ -1,25 +1,6 @@
-import AbstractView from './abstract-view.js';
 import SmartView  from './smart-view.js';
 import { CategoryType } from '../utils/const.js';
 
-
-export const createFilmListContainer = () => (
-  `<section class="films">
-    <section class="films-list">
-      <h2 class="films-list__title visually-hidden">All movies. Upcoming</h2>
-
-      <div class="films-list__container">
-      </div>
-    </section>
-
-  </section>`
-);
-export default class FilmListContainerView extends AbstractView {
-
-  get template() {
-    return createFilmListContainer();
-  }
-}
 
 const createCardFilmTemplate = (film) => {
   const watchlistClassName = film.isWatchlist ? 'film-card__controls-item--active' : '';

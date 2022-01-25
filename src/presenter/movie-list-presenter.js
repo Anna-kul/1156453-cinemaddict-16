@@ -1,77 +1,110 @@
-import FilmListContainerView from '../view/card-film-view.js';
+import FilmListContainerView from '../view/film-list-container-view.js';
 import BtnShowMoreView from '../view/btn-show-more-view.js';
 import {render, RenderPosition, remove} from '../utils/render.js';
 import {MoviePresenter} from './movie-presenter.js';
 import LoadingView from '../view/loading-view.js';
-import {updateFilm} from '../utils/common.js';
-
-
+import NoMoviesStubView from '../view/no-movies-stub-view.js';
+import {ChangeType} from '../model/abstract-model.js';
 export class MovieListPresenter {
-    #filmContainer = null;
-    #films = null;
+  static MOVIEWS_PER_LOAD_AMOUNT = 5;
+
+  #moviesModel = null;
+
     #siteMainElement = null;
-    #moviePresenter = new Map()
+
     #btnShowMore = null;
+    #movieListContainerView = new FilmListContainerView();
+    #loadingView = new LoadingView();
+    #noMoviesStubView = new NoMoviesStubView();
 
-    #filmListContainer = new FilmListContainerView();
-    #noFilms = new LoadingView();
+    #moviePresenter = new Map();
+    #initedMoviePresenters = 0;
 
-    constructor(siteMainElement){
+    constructor(siteMainElement, _, moviesModel){
       this.#siteMainElement = siteMainElement;
+      this.#moviesModel = moviesModel;
 
+      window['MovieListPresenter'] = this;
     }
 
-    init = (films) => {
-      this.#films = [...films];
-      this.#filmContainer = this.#filmListContainer.elem.querySelector('.films-list__container');
-      if(films.length === 0) {
-        this.#renderNoFilms();
+    initMoviePresenters() {
+      const filmListContainer = this.#movieListContainerView.elem.querySelector('.films-list__container');
+      for (let i = this.#initedMoviePresenters; i < this.#initedMoviePresenters + 5; i++) {
+        //если фильмов не осталось, то не выводить
+        if(i >= this.#moviesModel.movies.length) {
+          this.#initedMoviePresenters = this.#moviesModel.movies.length;
+          break;
+        }
+
+        const moviePresenter = new MoviePresenter(
+          filmListContainer,
+          this.#moviesModel,
+        );
+        moviePresenter.init(this.#moviesModel.movies[i].id);
+        this.#moviePresenter.set(this.#moviesModel.movies[i].id, moviePresenter);
+      }
+      this.#initedMoviePresenters += 5;
+    }
+
+    initBtnShowMoreView() {
+      if (this.#moviesModel.movies.length > MovieListPresenter.MOVIEWS_PER_LOAD_AMOUNT) {
+        this.#btnShowMore = new BtnShowMoreView();
+        this.#btnShowMore.setClickHandler(this.#handleBtnShowMoreViewClick);
+
+        render(this.#siteMainElement, this.#btnShowMore, RenderPosition.BEFOREEND);
+      }
+    }
+
+    init = () => {
+      this.#moviesModel.addObserver(this.#handleMovieModelChange);
+
+      if (this.#moviesModel.movies.length === 0) {
+        this.#renderNoMoviesStubView();
+
         return;
       }
-      render(this.#siteMainElement, this.#filmListContainer, RenderPosition.BEFOREEND);
-      let curentCardCount = 0;
-      //показывает следующие 5 фильмов
-      const showCards = () => {
-        for (let i = curentCardCount; i < curentCardCount + 5; i++) {
-          //если фильмов не осталось, то не выводить
-          if(i >= this.#films.length) {
-            curentCardCount = this.#films.length;
-            break;
-          }
 
-          const moviePresenter = new MoviePresenter(this.#filmContainer, this.#handleFilmChange);
-          moviePresenter.init(this.#films[i]);
-          this.#moviePresenter.set(this.#films[i].id, moviePresenter);
-        }
-        curentCardCount += 5;
+      render(this.#siteMainElement, this.#movieListContainerView, RenderPosition.BEFOREEND);
 
-      };
-      showCards();
-
-      this.#btnShowMore = new BtnShowMoreView();
-      this.#btnShowMore.setClickHandler(() => {
-        showCards();
-        // если все фильмы выведены удалить кнопку
-        if(curentCardCount >= this.#films.length){
-          this.#btnShowMore.elem.remove();
-        }
-      });
-
-      render(this.#siteMainElement, this.#btnShowMore, RenderPosition.BEFOREEND);
+      this.initMoviePresenters();
+      this.initBtnShowMoreView();
     }
 
-    #renderNoFilms = () => {
-      render(this.#siteMainElement, this.#noFilms, RenderPosition.BEFOREEND);
-    }
-
-    #clearFilmList = () => {
+    clear() {
       this.#moviePresenter.forEach((presenter) => presenter.destroy());
       this.#moviePresenter.clear();
       remove(this.#btnShowMore);
+      remove(this.#loadingView);
+      remove(this.#noMoviesStubView);
+
+      this.#initedMoviePresenters = 0;
     }
 
-    #handleFilmChange = (updatedFilm) => {
-      updateFilm(this.#films, updatedFilm);
+    #renderNoMoviesStubView = () => {
+      remove(this.#movieListContainerView);
+      render(this.#siteMainElement, this.#noMoviesStubView, RenderPosition.BEFOREEND);
+    }
+
+    #handleMovieModelChange = () => {
+      this.clear();
+
+      if (this.#moviesModel.movies.length === 0) {
+        this.#renderNoMoviesStubView();
+
+        return;
+      }
+
+      render(this.#siteMainElement, this.#movieListContainerView, RenderPosition.BEFOREEND);
+      this.initMoviePresenters();
+      this.initBtnShowMoreView();
+    }
+
+    #handleBtnShowMoreViewClick = () => {
+      this.initMoviePresenters();
+      // если все фильмы выведены удалить кнопку
+      if(this.#initedMoviePresenters >= this.#moviesModel.movies.length){
+        remove(this.#btnShowMore);
+      }
     }
 }
 

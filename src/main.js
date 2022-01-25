@@ -1,23 +1,45 @@
 import {generateCardFilm} from './mock/film.js';
 import UserRankView from './view/users-rank-view.js';
-import MenuNavigationView from './view/site-menu-view.js';
-import {FilterMenuView} from './view/site-menu-view.js';
+import MenuNavigationView from './view/menu-navigation-view.js';
+import SortingMenuView from './view/sorting-menu-view';
 import {render, RenderPosition} from './utils/render.js';
-import {generateNavigationSiteMenu, generateFilters} from './mock/site-menu.js';
+import {generateNavigationSiteMenu, generateSortings} from './mock/site-menu.js';
 import { MovieListPresenter } from './presenter/movie-list-presenter.js';
 import PopupView from './view/popup-view.js';
+import MoviesModel from './model/movies-model';
 
-const FILM_COUNT = 22;
+const FILM_COUNT = 1;
+
 export const films = Array.from({length: FILM_COUNT}, generateCardFilm);
 
-const header = document.querySelector('.header');
-render(header,new UserRankView, RenderPosition.BEFOREEND);
-
 const siteMainElement = document.querySelector('.main');
+const header = document.querySelector('.header');
 
-render(siteMainElement, new MenuNavigationView(generateNavigationSiteMenu()), RenderPosition.BEFOREEND);
-render(siteMainElement, new FilterMenuView(generateFilters()), RenderPosition.BEFOREEND);
+const moviesModel = new MoviesModel(films);
+moviesModel.init().finally(() => {
+  const menuNavigationView = new MenuNavigationView(generateNavigationSiteMenu(moviesModel.movies));
 
-const popupView = new PopupView();
-const movieListPresenter = new MovieListPresenter(siteMainElement, popupView);
-movieListPresenter.init(films);
+  const handleFilterLinkClick = (filter) => {
+    moviesModel.setFilter(filter);
+  };
+
+  menuNavigationView.setFilterLinkClickHandler(handleFilterLinkClick);
+
+  render(siteMainElement, menuNavigationView, RenderPosition.BEFOREEND);
+
+  const sortingMenuView = new SortingMenuView(generateSortings());
+
+  const handleSortingLinkClick = (sorting) => {
+    moviesModel.setSorting(sorting);
+  };
+
+  sortingMenuView.setSorgingLinkClickHandler(handleSortingLinkClick);
+
+  render(siteMainElement, sortingMenuView, RenderPosition.BEFOREEND);
+  render(header,new UserRankView(), RenderPosition.BEFOREEND);
+
+  const popupView = new PopupView();
+  const movieListPresenter = new MovieListPresenter(siteMainElement, popupView, moviesModel);
+  movieListPresenter.init();
+});
+

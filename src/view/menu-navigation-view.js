@@ -13,7 +13,7 @@ export default class MenuNavigationView extends AbstractView {
     <div class="main-navigation__items">
       <a href="#all" class="main-navigation__item">All movies</a>
     ${this.#siteMenu.reduce((htmlString, item) => {
-      htmlString += `<a href="#watchlist" class="main-navigation__item">${item.title} <span class="main-navigation__item-count">${item.count}</span></a>`;
+      htmlString += `<a id="${item.id}" href="#" class="main-navigation__item">${item.title} <span class="main-navigation__item-count">${item.count}</span></a>`;
 
       return htmlString;
     }, '')}
@@ -22,24 +22,20 @@ export default class MenuNavigationView extends AbstractView {
   </nav>`;
   }
 
-}
+  filterLinkClickHandler = (evt) => {
+    evt.preventDefault();
 
-export class FilterMenuView extends AbstractView{
-  #filter = null;
+    const filterLink = evt.target;
 
-  constructor(filter){
-    super();
-    this.#filter = filter;
+    this._callback.filterLink(filterLink.id);
   }
 
-  get template() {
+  setFilterLinkClickHandler = (handler) => {
+    this._callback.filterLink = handler;
 
-    return `<ul class="sort">
-  ${this.#filter.reduce((htmlString, item) => {
-      htmlString += `<li><a href="#" class="sort__button${item.active ? ' sort__button--active': ''}">${item.title}</a></li>`;
-      return htmlString;
-    }, '')}
- 
-</ul>`;
+    this.elem.querySelectorAll('.main-navigation__item').forEach((filterLink) => {
+      filterLink.addEventListener('click', this.filterLinkClickHandler);
+    });
   }
+
 }
