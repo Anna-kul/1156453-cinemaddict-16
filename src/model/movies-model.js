@@ -1,4 +1,6 @@
 import AbstractModel, {ChangeType} from './abstract-model';
+import {nanoid} from 'nanoid';
+import {generateComments} from '../mock/film';
 
 class MoviesModelError extends Error {}
 
@@ -90,7 +92,6 @@ export default class MoviesModel extends AbstractModel {
   }
 
   updateMovie(id, movieData) {
-    console.log('MoviesModel.updateMovie', id, movieData);
     this.checkMovieData(movieData);
 
     let movies = this.movies;
@@ -100,11 +101,7 @@ export default class MoviesModel extends AbstractModel {
       if (currentMovie.id === id) {
         isMovieFound = true;
 
-        const updatedMovie = {...currentMovie, ...movieData};
-
-        console.log('MoviesMode.updateMovie updatedMove', updatedMovie);
-
-        return updatedMovie;
+        return {...currentMovie, ...movieData};
       }
 
       return currentMovie;
@@ -114,9 +111,15 @@ export default class MoviesModel extends AbstractModel {
       throw new MoviesModelError(`Movie with ID '${id}' not found.`);
     }
 
-    console.log('MoviesModel.updateMovie result', movies);
+    this._data = movies;
 
-    this._movies = movies;
+    this._notifyObservers(ChangeType.MINOR);
+  }
+
+  addComment(movieId, {text: commentText, emoji}) {
+    const movie = this.getMovie(movieId);
+
+    movie.comments.push({...generateComments(), commentText, emoji});
 
     this._notifyObservers(ChangeType.MINOR);
   }

@@ -4,13 +4,13 @@ import {render, RenderPosition, remove} from '../utils/render.js';
 import {MoviePresenter} from './movie-presenter.js';
 import LoadingView from '../view/loading-view.js';
 import NoMoviesStubView from '../view/no-movies-stub-view.js';
-import {ChangeType} from '../model/abstract-model.js';
-export class MovieListPresenter {
-  static MOVIEWS_PER_LOAD_AMOUNT = 5;
 
-  #moviesModel = null;
+export default class MovieListPresenter {
+    static MOVIEWS_PER_LOAD_AMOUNT = 5;
 
-    #siteMainElement = null;
+    #root = null;
+
+    #initedMoviePresenters = 0;
 
     #btnShowMore = null;
     #movieListContainerView = new FilmListContainerView();
@@ -18,13 +18,12 @@ export class MovieListPresenter {
     #noMoviesStubView = new NoMoviesStubView();
 
     #moviePresenter = new Map();
-    #initedMoviePresenters = 0;
 
-    constructor(siteMainElement, _, moviesModel){
-      this.#siteMainElement = siteMainElement;
+    #moviesModel = null;
+
+    constructor(root, _, moviesModel){
+      this.#root = root;
       this.#moviesModel = moviesModel;
-
-      window['MovieListPresenter'] = this;
     }
 
     initMoviePresenters() {
@@ -51,7 +50,7 @@ export class MovieListPresenter {
         this.#btnShowMore = new BtnShowMoreView();
         this.#btnShowMore.setClickHandler(this.#handleBtnShowMoreViewClick);
 
-        render(this.#siteMainElement, this.#btnShowMore, RenderPosition.BEFOREEND);
+        render(this.#root, this.#btnShowMore, RenderPosition.BEFOREEND);
       }
     }
 
@@ -64,7 +63,7 @@ export class MovieListPresenter {
         return;
       }
 
-      render(this.#siteMainElement, this.#movieListContainerView, RenderPosition.BEFOREEND);
+      render(this.#root, this.#movieListContainerView, RenderPosition.BEFOREEND);
 
       this.initMoviePresenters();
       this.initBtnShowMoreView();
@@ -82,7 +81,7 @@ export class MovieListPresenter {
 
     #renderNoMoviesStubView = () => {
       remove(this.#movieListContainerView);
-      render(this.#siteMainElement, this.#noMoviesStubView, RenderPosition.BEFOREEND);
+      render(this.#root, this.#noMoviesStubView, RenderPosition.BEFOREEND);
     }
 
     #handleMovieModelChange = () => {
@@ -94,7 +93,7 @@ export class MovieListPresenter {
         return;
       }
 
-      render(this.#siteMainElement, this.#movieListContainerView, RenderPosition.BEFOREEND);
+      render(this.#root, this.#movieListContainerView, RenderPosition.BEFOREEND);
       this.initMoviePresenters();
       this.initBtnShowMoreView();
     }

@@ -208,7 +208,7 @@ const getRandomCountry = () => {
   return country[randomIndex];
 };
 
-const generateComments = () => ({
+export const generateComments = () => ({
   commentText: getRandomCommentText(),
   emoji: getRandomEmoji(),
   commentAutor: getRandomAutor(),

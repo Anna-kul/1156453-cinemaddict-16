@@ -1,113 +1,124 @@
 import {render, RenderPosition, replace, remove} from '../utils/render.js';
-import {CardFilmView} from '../view/card-film-view.js';
-import PopupView from '../view/popup-view.js';
-//import { CategoryType } from '../utils/const.js';
+import MovieCardView from '../view/movie-card-view/movie-card-view.js';
+import MoviePopupView from '../view/movie-popup-view/movie-popup-view.js';
+
+/**
+ * Имя класса для body, с помощью которого убирается вертикальная полоса прокрутки
+ */
+const HIDE_OVERFLOW_CLASS_NAME = 'hide-overflow';
+
 export class MoviePresenter {
+  #root = null;
+
   #movieId = null;
-  #filmContainer = null;
-  #cardFilmView = null;
-  #popupView = null;
+
+  #movieCardView = null;
+  #moviePopupView = null;
+
   #moviesModel = null;
 
 
   constructor(filmContainer, moviesModel){
-    this.#filmContainer = filmContainer;
+    this.#root = filmContainer;
     this.#moviesModel = moviesModel;
   }
 
   init = (movieId) => {
     this.#movieId = movieId;
 
-    const prevCardFilmView = this.#cardFilmView;
+    const prevMovieCardView = this.#movieCardView;
 
     this.#moviesModel.addObserver(this.#handleMoviesModelChange);
 
     const movie = this.#moviesModel.getMovie(movieId);
 
-    this.#cardFilmView = new CardFilmView(movie);
-    this.#cardFilmView.setClickHandler(this.cardFilmClichHandler);
+    this.#movieCardView = new MovieCardView(movie);
 
-    this.#cardFilmView.setFavoriteClickHandler(this.#handleFavoriteClick);
-    this.#cardFilmView.setAlreadyWatchedClickHandler(this.#handleAlreadyWatchedClick);
-    this.#cardFilmView.setAddedToWatchlistClickHandler(this.#handleAddedToWatchlistClick);
+    this.#movieCardView.setPosterClickHandler(this.#handleMoviePopupOpenerClick);
+    this.#movieCardView.setTitleClickHandler(this.#handleMoviePopupOpenerClick);
+    this.#movieCardView.setAddToFavoritesButtonClickHandler(this.#handleAddToFavoritesButtonClick);
+    this.#movieCardView.setAddToAlreadyWatchedButtonClickHandler(this.#handleAddToAlreadyWatchedButtonClick);
+    this.#movieCardView.setAddToWatchlistButtonClickHandler(this.#handleAddToWatchlistButtonClick);
+    this.#movieCardView.setCommentsLinkClickHandler(this.#handleMoviePopupOpenerClick);
 
-    this.#popupView = new PopupView(movie);
+    this.#moviePopupView = new MoviePopupView(movie);
 
-    if (prevCardFilmView === null) {
-      render(this.#filmContainer, this.#cardFilmView, RenderPosition.BEFOREEND);
+    if (prevMovieCardView === null) {
+      render(this.#root, this.#movieCardView, RenderPosition.BEFOREEND);
       return;
     }
 
-    replace(this.#cardFilmView, prevCardFilmView);
-    remove(prevCardFilmView);
+    replace(this.#movieCardView, prevMovieCardView);
+    remove(prevMovieCardView);
   }
 
-
-  cardFilmClichHandler = () => {
-    document.body.appendChild(this.#popupView.elem);
-    document.body.classList.add('hide-overflow');
-    this.#popupView.setCloseBtnClickHandler(this.#closePopup);
-    this.#popupView.setEscKeyPresshandler(this.#closePopup);
-    this.#popupView.setFavoriteClickHandler(this.#handleFavoriteClick);
-    this.#popupView.setAlreadyWatchedClickHandler(this.#handleAlreadyWatchedClick);
-    this.#popupView.setAddedToWatchlistClickHandler(this.#handleAddedToWatchlistClick);
-    this.#popupView.setChangeHandler(this.#handlePopupViewChange);
+  #handleMoviePopupOpenerClick = () => {
+    this.#renderMoviePopup();
   }
 
-  #closePopup = () => {
-    document.body.removeChild(this.#popupView.elem);
-    document.body.classList.remove('hide-overflow');
-    this.#popupView.removeElement();
+  #renderMoviePopup = () => {
+    this.#moviePopupView.setCloseHandler(this.#handleMoviePopupClose);
+    this.#moviePopupView.setChangeHandler(this.#handleMoviePopupChange);
+    this.#moviePopupView.setAddToFavoritesButtonClickHandler(this.#handleAddToFavoritesButtonClick);
+    this.#moviePopupView.setAddToAlreadyWatchedButtonClickHandler(this.#handleAddToAlreadyWatchedButtonClick);
+    this.#moviePopupView.setAddToWatchlistButtonClickHandler(this.#handleAddToWatchlistButtonClick);
+    this.#moviePopupView.setSubmitHandler(this.#handleMoviePopupSubmit);
+
+    render(document.body, this.#moviePopupView, RenderPosition.BEFOREEND);
+
+    document.body.classList.add(HIDE_OVERFLOW_CLASS_NAME);
   }
 
-  #handleMoviesModelChange = (_, changeType) => {
-    console.log('changed minor')
+  #removeMoviePopup = () => {
+    remove(this.#moviePopupView);
+
+    document.body.classList.remove(HIDE_OVERFLOW_CLASS_NAME);
+  }
+
+  #handleMoviePopupClose = () => {
+    this.#removeMoviePopup();
+  }
+
+  #handleMoviesModelChange = (data, changeType) => {
     if (changeType !== 'minor') {
       return;
     }
 
     const movie = this.#moviesModel.getMovie(this.#movieId);
 
-    this.#cardFilmView.updateData(movie);
-    this.#popupView.updateData(movie);
+    this.#movieCardView.updateData(movie);
+    this.#moviePopupView.updateData(movie);
   }
 
-  #handleFavoriteClick = () => {
+  #handleAddToFavoritesButtonClick = () => {
     const movie = this.#moviesModel.getMovie(this.#movieId);
 
     this.#moviesModel.updateMovie(this.#movieId, {isFavorite: !movie.isFavorite});
   }
 
-  #handleAlreadyWatchedClick = () => {
+  #handleAddToAlreadyWatchedButtonClick = () => {
     const movie = this.#moviesModel.getMovie(this.#movieId);
 
     this.#moviesModel.updateMovie(this.#movieId, {isWatched : !movie.isWatched});
   }
 
-  #handleAddedToWatchlistClick = () => {
+  #handleAddToWatchlistButtonClick = () => {
     const movie = this.#moviesModel.getMovie(this.#movieId);
 
     this.#moviesModel.updateMovie(this.#movieId, {isWatchlist: !movie.isWatchlist});
   }
 
-  #handlePopupViewChange = (data) => {
-    const {comment: commentText, ['comment-emoji']: commentEmoji} = data;
+  #handleMoviePopupChange = (commentData) => {
+    this.#moviePopupView.updateData(commentData);
+  }
 
-    this.#popupView.updateData({
-      commentText,
-      ...commentEmoji && {commentEmoji}}
-    );
+  #handleMoviePopupSubmit = ({text, emoji}) => {
+    this.#moviesModel.addComment(this.#movieId, {text, emoji});
+    this.#moviePopupView.updateData({comment: {text: '', emoji: ''}});
   }
 
   destroy = () => {
-    remove(this.#cardFilmView);
-  }
-
-  setCategoryClickHandler = (handler) => {
-    this.#cardFilmView.setCategoryClickHandler(handler);
-  }
-
-  setClickHandler = (handler) => {
-    this.#cardFilmView.setClickHandler(handler);
+    remove(this.#movieCardView);
+    this.#removeMoviePopup();
   }
 }

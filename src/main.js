@@ -4,8 +4,8 @@ import MenuNavigationView from './view/menu-navigation-view.js';
 import SortingMenuView from './view/sorting-menu-view';
 import {render, RenderPosition} from './utils/render.js';
 import {generateNavigationSiteMenu, generateSortings} from './mock/site-menu.js';
-import { MovieListPresenter } from './presenter/movie-list-presenter.js';
-import PopupView from './view/popup-view.js';
+import MovieListPresenter from './presenter/movie-list-presenter.js';
+import MoviePopupView from './view/movie-popup-view/movie-popup-view.js';
 import MoviesModel from './model/movies-model';
 
 const FILM_COUNT = 1;
@@ -16,6 +16,7 @@ const siteMainElement = document.querySelector('.main');
 const header = document.querySelector('.header');
 
 const moviesModel = new MoviesModel(films);
+
 moviesModel.init().finally(() => {
   const menuNavigationView = new MenuNavigationView(generateNavigationSiteMenu(moviesModel.movies));
 
@@ -38,8 +39,10 @@ moviesModel.init().finally(() => {
   render(siteMainElement, sortingMenuView, RenderPosition.BEFOREEND);
   render(header,new UserRankView(), RenderPosition.BEFOREEND);
 
-  const popupView = new PopupView();
+  const popupView = new MoviePopupView();
+
   const movieListPresenter = new MovieListPresenter(siteMainElement, popupView, moviesModel);
+
   movieListPresenter.init();
 });
 
