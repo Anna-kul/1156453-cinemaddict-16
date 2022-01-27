@@ -1,47 +1,70 @@
-import AbstractModel, {ChangeType} from './abstract-model';
-import {nanoid} from 'nanoid';
-import {generateComments} from '../mock/film';
+import AbstractModel from './abstract-model';
+import {ChangeType} from '../utils/const.js';
+import {MOVIE_DATA_FIELDS, Filter, Sorting} from '../utils/const.js';
+
+/*
+{
+    "id": "0",
+    "film_info": {
+      "title": "Pioneers Without The Void",
+      "alternative_title": "Family Who Saw Us",
+      "total_rating": 6.4,
+      "poster": "images/posters/the-dance-of-life.jpg",
+      "age_rating": 21,
+      "director": "James Cameron",
+      "writers": [
+        "Takeshi Kitano"
+      ],
+      "actors": [
+        "Ralph Fiennes",
+        "Gary Oldman",
+        "Michael Caine",
+        "Tom Hanks",
+        "Cillian Murphy",
+        "Al Pacino",
+        "Morgan Freeman ",
+        "Harrison Ford"
+      ],
+      "release": {
+        "date": "2001-08-20T12:58:05.634Z",
+        "release_country": "Japan"
+      },
+      "runtime": 73,
+      "genre": [
+        "Comedy",
+        "Action",
+        "Adventure",
+        "Family",
+        "Drama"
+      ],
+      "description": "Oscar-winning film."
+    },
+    "user_details": {
+      "watchlist": false,
+      "already_watched": true,
+      "watching_date": "2021-11-02T17:23:03.967Z",
+      "favorite": false
+    },
+    "comments": [
+      "181431",
+      "181432",
+      "181433"
+    ]
+  }
+  */
 
 class MoviesModelError extends Error {}
-
-const MOVIE_DATA_FIELDS = [
-  'poster',
-  'title',
-  'rating',
-  'releaseYear',
-  'description',
-  'duration',
-  'genre',
-  'comments',
-  'isWatchlist',
-  'isWatched',
-  'isFavorite',
-  'ageRating',
-  'director',
-  'writers',
-  'actors',
-  'dateRelease',
-  'country',
-];
-
-export const Filter = {
-  ALL: 'all',
-  WATCHLIST: 'watchlist',
-  HISTORY: 'history',
-  FAVORITES: 'favorites',
-};
-
-export const Sorting = {
-  DEFAULT: 'default',
-  DATE: 'date',
-  RATING: 'rating',
-};
-
-
 
 export default class MoviesModel extends AbstractModel {
   #filter = Filter.ALL;
   #sorting = Sorting.DEFAULT;
+  #apiService = null;
+
+  constructor(apiService) {
+    super();
+
+    this.#apiService = apiService;
+  }
 
   set movies(movies) {
     this._data = movies;
@@ -51,6 +74,7 @@ export default class MoviesModel extends AbstractModel {
 
   get movies() {
     let movies = this._data;
+    console.log(movies);
 
     switch (this.#filter) {
       case Filter.WATCHLIST:
@@ -78,12 +102,22 @@ export default class MoviesModel extends AbstractModel {
   }
 
   init() {
-    return Promise.resolve();
+    window.api = this.#apiService;
+    return this.#apiService.movies.then((movies) => {
+      
+      const adaptedMovies = movies.map(this.#adaptMovie);
+      console.log(adaptedMovies);
+      this.movies = adaptedMovies;
+    });
   }
 
   setFilter(filter) {
     this.#filter = filter;
     this._notifyObservers(ChangeType.MAJOR);
+  }
+
+  getFilter() {
+    return this.#filter;
   }
 
   setSorting(sorting) {
@@ -92,6 +126,7 @@ export default class MoviesModel extends AbstractModel {
   }
 
   updateMovie(id, movieData) {
+    console.log('MoviesModel.updateMovie', id, movieData);
     this.checkMovieData(movieData);
 
     let movies = this.movies;
@@ -101,7 +136,11 @@ export default class MoviesModel extends AbstractModel {
       if (currentMovie.id === id) {
         isMovieFound = true;
 
-        return {...currentMovie, ...movieData};
+        const updatedMovie = {...currentMovie, ...movieData};
+
+        console.log('MoviesMode.updateMovie updatedMove', updatedMovie);
+
+        return updatedMovie;
       }
 
       return currentMovie;
@@ -111,15 +150,7 @@ export default class MoviesModel extends AbstractModel {
       throw new MoviesModelError(`Movie with ID '${id}' not found.`);
     }
 
-    this._data = movies;
-
-    this._notifyObservers(ChangeType.MINOR);
-  }
-
-  addComment(movieId, {text: commentText, emoji}) {
-    const movie = this.getMovie(movieId);
-
-    movie.comments.push({...generateComments(), commentText, emoji});
+    this._movies = movies;
 
     this._notifyObservers(ChangeType.MINOR);
   }
@@ -140,5 +171,29 @@ export default class MoviesModel extends AbstractModel {
     }
 
     return movie;
+  }
+
+  #adaptMovie = (movie) => {
+    return {
+      id: movie.id,
+      title: movie.film_info.title,
+      poster: movie.poster.title,
+      rating: movie.film_info.total,
+      alternativeTitle: movie.film_info.alternative_title,
+      releaseDate: new Date(movie.release.date),
+      description: movie.film_info.description,
+      duration: movie.film_info.runtime,
+      genre: movie.film_info.genre,
+      comments: movie.film_info.comments,
+      isWatchlist: movie.user_details.watchlist,
+      isWatched: movie.user_details.already_watched,
+      isFavorite: movie.user_details.favorite,
+      watchingDate: movie.user_details.watching_date,
+      ageRating: movie.film_info.age_rating,
+      director: movie.film_info.director,
+      writers: movie.film_info.writers,
+      actors: movie.film_info.actors,
+      country: movie.release.release_country,
+    };
   }
 }

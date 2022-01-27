@@ -1,4 +1,4 @@
-import {Sorting, Filter} from '../model/movies-model.js';
+import {Sorting, Filter} from '../utils/const.js';
 
 export const generateNavigationSiteMenu = (movies) => [
   {

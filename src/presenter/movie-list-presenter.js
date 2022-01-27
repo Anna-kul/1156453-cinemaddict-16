@@ -29,7 +29,6 @@ export default class MovieListPresenter {
     initMoviePresenters() {
       const filmListContainer = this.#movieListContainerView.elem.querySelector('.films-list__container');
       for (let i = this.#initedMoviePresenters; i < this.#initedMoviePresenters + 5; i++) {
-        //если фильмов не осталось, то не выводить
         if(i >= this.#moviesModel.movies.length) {
           this.#initedMoviePresenters = this.#moviesModel.movies.length;
           break;
@@ -80,6 +79,8 @@ export default class MovieListPresenter {
     }
 
     #renderNoMoviesStubView = () => {
+      const filter = this.#moviesModel.getFilter();
+
       remove(this.#movieListContainerView);
       render(this.#root, this.#noMoviesStubView, RenderPosition.BEFOREEND);
     }
@@ -100,7 +101,6 @@ export default class MovieListPresenter {
 
     #handleBtnShowMoreViewClick = () => {
       this.initMoviePresenters();
-      // если все фильмы выведены удалить кнопку
       if(this.#initedMoviePresenters >= this.#moviesModel.movies.length){
         remove(this.#btnShowMore);
       }
