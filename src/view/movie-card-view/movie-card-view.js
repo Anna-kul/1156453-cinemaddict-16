@@ -2,16 +2,16 @@ import SmartView  from '../smart-view.js';
 import createMovieCardTemplate from './movie-card-template';
 
 export default class MovieCardView extends SmartView {
-  #movie = null;
+  _data = {movie: null, comments: null}
 
   constructor(movie){
     super();
 
-    this.#movie = movie;
+    this._data.movie = movie;
   }
 
   get template() {
-    return createMovieCardTemplate(this.#movie);
+    return createMovieCardTemplate(this._data.movie);
   }
 
   #getTitle = () => this.elem.querySelector('.film-card__title');

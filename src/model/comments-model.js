@@ -4,35 +4,66 @@ import {ChangeType} from '../utils/const.js';
 class CommentsModelError extends Error {}
 
 export default class CommentsModel extends AbstractModel {
+  #apiService = null;
+
+  _data = {}
+
+  constructor(apiService) {
+    super();
+
+    this.#apiService = apiService;
+  }
+
   set comments(comments) {
-    this._data = comments;
+    this._data = comments.reduce((map, comment) => {
+      map[comment.id] = comment;
+
+      return map;
+    }, {});
 
     this._notifyObservers(ChangeType.MAJOR);
   }
 
   get comments() {
-    return this._data;
+    return Object.values(this._data);
   }
 
-  init() {
-    return Promise.resolve();
+  async getMovieComments(movieId) {
+    const movieComments = await this.#apiService.getMovieComments(movieId);
+
+    const adaptedMovieComments = this.#adaptComments(movieComments);
+
+    this._data = {...(this.comments || {}), ...adaptedMovieComments};
+
+    this._notifyObservers(ChangeType.MAJOR);
   }
 
-  getComment(commentId) {
-    const comment = this.comments.find(({id: currentCommentId}) => currentCommentId === commentId);
+  async deleteComment(commentId) {
+    try {
+      this.getComment(commentId);
 
-    if (comment === undefined) {
-      throw new CommentsModelError(`Comment with ID '${commentId}' not found.`);
+      await this.apiService.deleteComment(commentId);
+
+      this._data = this._data.filter(({id: currentCommentId}) => currentCommentId === commentId);
+
+      this._notifyObservers(ChangeType.MINOR);
+    } catch (error) {
+      return Promise.resolve();
     }
-
-    return comment;
   }
 
-  deleteComment(commentId) {
-    this.getComment(commentId);
+  #adaptComment = (comment) => ({
+    ...comment,
+    emoji: comment.emotion,
+    text: comment.comment,
+    date: new Date(comment.date),
+  })
 
-    this._data = this._data.filter(({id: currentCommentId}) => currentCommentId === commentId);
+  #adaptComments = (comments) => comments.reduce((map, comment) => {
+    const adaptedComment = this.#adaptComment(comment);
 
-    this._notifyObservers(ChangeType.MINOR);
-  }
+    map[adaptedComment.id] = adaptedComment;
+
+    return map;
+  }, {})
 }

@@ -1,22 +1,4 @@
-import {Sorting, Filter} from '../utils/const.js';
-
-export const generateNavigationSiteMenu = (movies) => [
-  {
-    id: Filter.WATCHLIST,
-    title: 'Watchlist',
-    count: movies.filter((film) => film.isWatchlist).length
-  },
-  {
-    id: Filter.HISTORY,
-    title: 'History',
-    count: movies.filter((film) => film.isWatched).length
-  },
-  {
-    id: Filter.FAVORITES,
-    title: 'Favorites',
-    count: movies.filter((film) => film.isFavorite).length
-  }
-];
+import {Sorting} from '../utils/const.js';
 
 export const generateSortings = () => [
   {

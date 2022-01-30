@@ -1,3 +1,9 @@
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
+
+dayjs.extend(duration);
+
+
 const createInfoTemplate = (movie) => (
   `<div class="film-details__info">
     <div class="film-details__info-head">
@@ -18,19 +24,19 @@ const createInfoTemplate = (movie) => (
       </tr>
       <tr class="film-details__row">
         <td class="film-details__term">Writers</td>
-        <td class="film-details__cell">${movie.writers}</td>
+        <td class="film-details__cell">${movie.writers.join(', ')}</td>
       </tr>
       <tr class="film-details__row">
         <td class="film-details__term">Actors</td>
-        <td class="film-details__cell">${movie.actors}</td>
+        <td class="film-details__cell">${movie.actors.join(', ')}</td>
       </tr>
       <tr class="film-details__row">
         <td class="film-details__term">Release Date</td>
-        <td class="film-details__cell">${movie.dateRelease}</td>
+        <td class="film-details__cell">${movie.releaseDate.getFullYear()}</td>
       </tr>
       <tr class="film-details__row">
         <td class="film-details__term">Runtime</td>
-        <td class="film-details__cell">${movie.duration}</td>
+        <td class="film-details__cell">${dayjs.duration(movie.duration, 'minutes').format('H[h] m[m]')}</td>
       </tr>
       <tr class="film-details__row">
         <td class="film-details__term">Country</td>

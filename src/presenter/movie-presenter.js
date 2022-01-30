@@ -1,38 +1,39 @@
 import {render, RenderPosition, replace, remove} from '../utils/render.js';
 import MovieCardView from '../view/movie-card-view/movie-card-view.js';
 import MoviePopupView from '../view/movie-popup-view/movie-popup-view.js';
+import {ChangeType} from '../utils/const';
 
 /**
  * Имя класса для body, с помощью которого убирается вертикальная полоса прокрутки
  */
 const HIDE_OVERFLOW_CLASS_NAME = 'hide-overflow';
-
 export class MoviePresenter {
   #root = null;
 
-  #movieId = null;
+  #movie = null;
 
   #movieCardView = null;
   #moviePopupView = null;
 
   #moviesModel = null;
+  #commentsModel = null;
 
 
-  constructor(filmContainer, moviesModel){
+  constructor(filmContainer, moviesModel, commentsModel){
     this.#root = filmContainer;
     this.#moviesModel = moviesModel;
+    this.#commentsModel = commentsModel;
   }
 
-  init = (movieId) => {
-    this.#movieId = movieId;
+  init = (movie) => {
+    this.#movie = movie;
 
     const prevMovieCardView = this.#movieCardView;
 
     this.#moviesModel.addObserver(this.#handleMoviesModelChange);
+    this.#commentsModel.addObserver(this.#handleCommentsModelChange);
 
-    const movie = this.#moviesModel.getMovie(movieId);
-
-    this.#movieCardView = new MovieCardView(movie);
+    this.#movieCardView = new MovieCardView(this.#movie);
 
     this.#movieCardView.setPosterClickHandler(this.#handleMoviePopupOpenerClick);
     this.#movieCardView.setTitleClickHandler(this.#handleMoviePopupOpenerClick);
@@ -41,7 +42,7 @@ export class MoviePresenter {
     this.#movieCardView.setAddToWatchlistButtonClickHandler(this.#handleAddToWatchlistButtonClick);
     this.#movieCardView.setCommentsLinkClickHandler(this.#handleMoviePopupOpenerClick);
 
-    this.#moviePopupView = new MoviePopupView(movie);
+    this.#moviePopupView = new MoviePopupView(this.#movie);
 
     if (prevMovieCardView === null) {
       render(this.#root, this.#movieCardView, RenderPosition.BEFOREEND);
@@ -54,6 +55,9 @@ export class MoviePresenter {
 
   #handleMoviePopupOpenerClick = () => {
     this.#renderMoviePopup();
+    this.#commentsModel.getMovieComments(this.#movie.id).then(() => {
+      this.#moviePopupView.updateData({isLoading: false});
+    });
   }
 
   #renderMoviePopup = () => {
@@ -63,6 +67,7 @@ export class MoviePresenter {
     this.#moviePopupView.setAddToAlreadyWatchedButtonClickHandler(this.#handleAddToAlreadyWatchedButtonClick);
     this.#moviePopupView.setAddToWatchlistButtonClickHandler(this.#handleAddToWatchlistButtonClick);
     this.#moviePopupView.setSubmitHandler(this.#handleMoviePopupSubmit);
+    this.#moviePopupView.setDeleteCommentButtonClickHandler(this.#handleDeleteCommentButtonClick);
 
     render(document.body, this.#moviePopupView, RenderPosition.BEFOREEND);
 
@@ -80,32 +85,54 @@ export class MoviePresenter {
   }
 
   #handleMoviesModelChange = (data, changeType) => {
-    if (changeType !== 'minor') {
+    if (changeType !== ChangeType.MINOR) {
       return;
     }
 
-    const movie = this.#moviesModel.getMovie(this.#movieId);
+    const movie = this.#moviesModel.getMovie(this.#movie.id);
 
-    this.#movieCardView.updateData(movie);
-    this.#moviePopupView.updateData(movie);
+    let isMovieUpdated = false;
+
+    for (const [newMovieKey, newMovieValue] of Object.entries(movie)) {
+      if (this.#movie[newMovieKey] !== newMovieValue) {
+        isMovieUpdated = true;
+
+        break;
+      }
+    }
+
+    if (!isMovieUpdated) {
+      return;
+    }
+
+    this.#movie = movie;
+
+    this.#movieCardView.updateData({movie});
+    this.#moviePopupView.updateData({movie});
+  }
+
+  #handleCommentsModelChange = () => {
+    this.#moviePopupView.updateData({comments: this.#commentsModel.comments});
   }
 
   #handleAddToFavoritesButtonClick = () => {
-    const movie = this.#moviesModel.getMovie(this.#movieId);
-
-    this.#moviesModel.updateMovie(this.#movieId, {isFavorite: !movie.isFavorite});
+    this.#moviesModel.updateMovie(this.#movie.id, {isFavorite: !this.#movie.isFavorite});
   }
 
   #handleAddToAlreadyWatchedButtonClick = () => {
-    const movie = this.#moviesModel.getMovie(this.#movieId);
-
-    this.#moviesModel.updateMovie(this.#movieId, {isWatched : !movie.isWatched});
+    this.#moviesModel.updateMovie(this.#movie.id, {isWatched : !this.#movie.isWatched});
   }
 
   #handleAddToWatchlistButtonClick = () => {
-    const movie = this.#moviesModel.getMovie(this.#movieId);
+    this.#moviesModel.updateMovie(this.#movie.id, {isWatchlist: !this.#movie.isWatchlist});
+  }
 
-    this.#moviesModel.updateMovie(this.#movieId, {isWatchlist: !movie.isWatchlist});
+  #handleDeleteCommentButtonClick = async (commentId) => {
+    this.moviePopupView.updateData({isCommentDeleting: true});
+
+    await this.#commentsModel.deleteComment(commentId);
+
+    this.moviePopupView.updateData({isCommentDeleting: false});
   }
 
   #handleMoviePopupChange = (commentData) => {
@@ -113,12 +140,14 @@ export class MoviePresenter {
   }
 
   #handleMoviePopupSubmit = ({text, emoji}) => {
-    this.#moviesModel.addComment(this.#movieId, {text, emoji});
+    this.#moviesModel.addComment(this.#movie.id, {text, emoji});
     this.#moviePopupView.updateData({comment: {text: '', emoji: ''}});
   }
 
   destroy = () => {
     remove(this.#movieCardView);
+    this.#moviesModel.removeObserver(this.#handleMoviesModelChange);
+    this.#commentsModel.removeObserver(this.#handleCommentsModelChange);
     this.#removeMoviePopup();
   }
 }

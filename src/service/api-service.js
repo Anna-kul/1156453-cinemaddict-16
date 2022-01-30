@@ -12,7 +12,12 @@ export default class ApiService {
     this.#authorization = authorization;
   }
 
-  get movies() {
+  getMovieComments(movieId) {
+    return this.#load({url: `comments/${movieId}`})
+      .then(ApiService.parseResponse);
+  }
+
+  getMovies() {
     return this.#load({url: 'movies'})
       .then(ApiService.parseResponse);
   }

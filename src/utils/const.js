@@ -24,13 +24,6 @@ export const MOVIE_DATA_FIELDS = [
   'country',
 ];
 
-export const Filter = {
-  ALL: 'all',
-  WATCHLIST: 'watchlist',
-  HISTORY: 'history',
-  FAVORITES: 'favorites',
-};
-
 export const Sorting = {
   DEFAULT: 'default',
   DATE: 'date',

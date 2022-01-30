@@ -1,7 +1,7 @@
 import createCommentTemplate from './comment-template';
 import createNewCommentFormTemplate from './new-comment-form-template';
 
-const createCommentsTemplate = (movie, comment) => (
+const createCommentsTemplate = (movie, comments, comment, isLoading, isCommentDeleting) => (
   `<div class="film-details__bottom-container">
     <section class="film-details__comments-wrap">
       <h3 class="film-details__comments-title">
@@ -11,9 +11,14 @@ const createCommentsTemplate = (movie, comment) => (
   }
       </h3>
 
-      <ul class="film-details__comments-list">
-        ${movie.comments.reduce((html, currentComment) => html+createCommentTemplate(currentComment), '')}
-      </ul>
+      ${isLoading ? (
+    'Loading...'
+  ) : (
+    `<ul class="film-details__comments-list">
+      ${comments.reduce((html, currentComment) => html+createCommentTemplate(currentComment, isCommentDeleting), '')}
+    </ul>`
+  )}
+      
 
       ${createNewCommentFormTemplate(comment)}
     </section>

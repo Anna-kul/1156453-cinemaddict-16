@@ -8,22 +8,30 @@ const Key = {
 };
 
 export default class MoviePopupView extends SmartView {
-  #movie = null;
-
-  _data = {commentText: '', commentEmoji: ''};
+  _data = {
+    movie: null,
+    comments: null,
+    commentText: '',
+    commentEmoji: '',
+    isLoading: true,
+    isCommentDeleting: false,
+  };
 
   constructor (movie) {
     super();
 
-    this.#movie = movie;
+    this._data.movie = movie;
   }
 
   get template() {
     document.addEventListener('keydown', this.#handleEnterPlusCtrlKeyDown);
 
     return createMoviePopupTemplate(
-      this.#movie,
+      this._data.movie,
+      this._data.comments,
       {text: this._data.commentText, emoji: this._data.commentEmoji},
+      this._data.isLoading,
+      this._data.isCommentDeleting,
     );
   }
 
@@ -74,6 +82,12 @@ export default class MoviePopupView extends SmartView {
     this._callback.submitHandler = handler;
 
     this.#getInner().addEventListener('submit', this.#handleSubmit);
+  }
+
+  setDeleteCommentButtonClickHandler(handler) {
+    this._callback.deleteCommentButtonClickHandler = handler;
+
+    document.addEventListener('click', this.#handleDeleteCommentButtonClick);
   }
 
   #handleChange = (evt) => {
@@ -139,6 +153,18 @@ export default class MoviePopupView extends SmartView {
     this.#getInner().dispatchEvent(new Event('submit'));
   }
 
+  #handleDeleteCommentButtonClick = (evt) => {
+    if (!evt.target.classList.contains('film-details__comment-delete')) {
+      return;
+    }
+
+    const commentId = evt.target.dataset.commentId;
+
+    console.log(this._callback);
+
+    this._callback.deleteCommentButtonClickHandler(commentId);
+  }
+
   restoreHandlers() {
     this.#getAddToWatchlistButton().addEventListener('click', this.#addToWatchlistButtonClickHandler);
     this.#getAddToAlreadyWatchedButton().addEventListener('click', this.#addToAlreadyWatchedButtonClickHandler);
@@ -148,6 +174,7 @@ export default class MoviePopupView extends SmartView {
     this.#getInner().addEventListener('submit', this.#handleSubmit);
     document.addEventListener('keydown', this.#escKeyDownHandler);
     document.addEventListener('keydown', this.#handleEnterPlusCtrlKeyDown);
+    document.addEventListener('click', this.#handleDeleteCommentButtonClick);
   }
 
   removeElement() {
@@ -155,5 +182,6 @@ export default class MoviePopupView extends SmartView {
 
     document.removeEventListener('keydown', this.#escKeyDownHandler);
     document.removeEventListener('keydown', this.#handleEnterPlusCtrlKeyDown);
+    document.removeEventListener('click', this.#handleDeleteCommentButtonClick);
   }
 }

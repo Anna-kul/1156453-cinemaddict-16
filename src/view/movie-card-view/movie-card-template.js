@@ -1,3 +1,8 @@
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
+
+dayjs.extend(duration);
+
 import {CategoryType} from '../../utils/const';
 
 const FILM_CARD_CONTROLS_ITEM_ACTIVE_CLASS_NAME = 'film-card__controls-item--active';
@@ -13,9 +18,9 @@ const createMovieCardTemplate = (movie) => {
           <h3 class="film-card__title">${movie.title}</h3>
           <p class="film-card__rating">${movie.rating}</p>
           <p class="film-card__info">
-            <span class="film-card__year">${movie.releaseYear}</span>
-            <span class="film-card__duration">${movie.duration}</span>
-            <span class="film-card__genre">${movie.genre}</span>
+            <span class="film-card__year">${movie.releaseDate.getFullYear()}</span>
+            <span class="film-card__duration">${dayjs.duration(movie.duration, 'minutes').format('H[h] m[m]')}</span>
+            <span class="film-card__genre">${movie.genre.join(', ')}</span>
           </p>
           <img src="${movie.poster}" alt="" class="film-card__poster">
           <p class="film-card__description">${movie.description}</p>

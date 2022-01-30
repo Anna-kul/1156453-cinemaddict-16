@@ -4,6 +4,7 @@ import {render, RenderPosition, remove} from '../utils/render.js';
 import {MoviePresenter} from './movie-presenter.js';
 import LoadingView from '../view/loading-view.js';
 import NoMoviesStubView from '../view/no-movies-stub-view.js';
+import {ChangeType} from '../utils/const.js';
 
 export default class MovieListPresenter {
     static MOVIEWS_PER_LOAD_AMOUNT = 5;
@@ -20,10 +21,14 @@ export default class MovieListPresenter {
     #moviePresenter = new Map();
 
     #moviesModel = null;
+    #commentsModel = null;
+    #filtersModel = null;
 
-    constructor(root, _, moviesModel){
+    constructor(root, _, moviesModel, commentsModel, filtersModel){
       this.#root = root;
       this.#moviesModel = moviesModel;
+      this.#commentsModel = commentsModel;
+      this.#filtersModel = filtersModel;
     }
 
     initMoviePresenters() {
@@ -37,8 +42,9 @@ export default class MovieListPresenter {
         const moviePresenter = new MoviePresenter(
           filmListContainer,
           this.#moviesModel,
+          this.#commentsModel,
         );
-        moviePresenter.init(this.#moviesModel.movies[i].id);
+        moviePresenter.init(this.#moviesModel.movies[i]);
         this.#moviePresenter.set(this.#moviesModel.movies[i].id, moviePresenter);
       }
       this.#initedMoviePresenters += 5;
@@ -54,7 +60,8 @@ export default class MovieListPresenter {
     }
 
     init = () => {
-      this.#moviesModel.addObserver(this.#handleMovieModelChange);
+      this.#moviesModel.addObserver(this.#handleMoviesModelChange);
+      this.#filtersModel.addObserver(this.#handleFiltersModelChange);
 
       if (this.#moviesModel.movies.length === 0) {
         this.#renderNoMoviesStubView();
@@ -79,13 +86,11 @@ export default class MovieListPresenter {
     }
 
     #renderNoMoviesStubView = () => {
-      const filter = this.#moviesModel.getFilter();
-
       remove(this.#movieListContainerView);
       render(this.#root, this.#noMoviesStubView, RenderPosition.BEFOREEND);
     }
 
-    #handleMovieModelChange = () => {
+    #reinit = () => {
       this.clear();
 
       if (this.#moviesModel.movies.length === 0) {
@@ -95,8 +100,27 @@ export default class MovieListPresenter {
       }
 
       render(this.#root, this.#movieListContainerView, RenderPosition.BEFOREEND);
+
       this.initMoviePresenters();
       this.initBtnShowMoreView();
+    }
+
+    #handleMoviesModelChange = (_, changeType) => {
+      if (changeType !== ChangeType.MAJOR) {
+        return;
+      }
+
+      this.#reinit();
+    }
+
+    #handleFiltersModelChange = (_, changeType) => {
+      if (changeType !== ChangeType.MAJOR) {
+        return;
+      }
+
+      console.log('#handleFiltersModelChange');
+
+      this.#reinit();
     }
 
     #handleBtnShowMoreViewClick = () => {

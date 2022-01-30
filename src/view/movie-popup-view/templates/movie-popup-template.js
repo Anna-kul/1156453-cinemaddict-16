@@ -3,7 +3,7 @@ import {CategoryType} from '../../../utils/const';
 import createInfoTemplate from './info-template';
 import createCommentsTemplate from './comments-template';
 
-const createMoviePopupTemplate = (movie, comment) => {
+const createMoviePopupTemplate = (movie, comments, comment, isLoading, isCommentDeleting) => {
   const watchlistClassName = movie.isWatchlist
     ? 'film-details__control-button--active film-details__control-button--watchlist'
     : 'film-details__control-button--watchlist';
@@ -40,7 +40,7 @@ const createMoviePopupTemplate = (movie, comment) => {
           </section>
         </div>
 
-        ${createCommentsTemplate(movie, comment)}
+        ${createCommentsTemplate(movie, comments, comment, isLoading, isCommentDeleting)}
 
       </form>
     </section>`
