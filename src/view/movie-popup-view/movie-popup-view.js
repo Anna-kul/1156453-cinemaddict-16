@@ -7,6 +7,10 @@ const Key = {
   ENTER: 'Enter',
 };
 
+/**
+ * TODO: Покачивание, если не удалось удалить комментарий
+ */
+
 export default class MoviePopupView extends SmartView {
   _data = {
     movie: null,
@@ -15,6 +19,14 @@ export default class MoviePopupView extends SmartView {
     commentEmoji: '',
     isLoading: true,
     isCommentDeleting: false,
+    /**
+     * Трясётся ли форма. Используется при неудачном создании комментария
+     */
+    isCommentFormShaking: false,
+    /**
+     * Идентификатор удаляемого комментария. Используется при неудачном удалении комментария
+     */
+    shakingCommentId: null,
   };
 
   constructor (movie) {
@@ -32,6 +44,8 @@ export default class MoviePopupView extends SmartView {
       {text: this._data.commentText, emoji: this._data.commentEmoji},
       this._data.isLoading,
       this._data.isCommentDeleting,
+      this._data.isCommentFormShaking,
+      this._data.shakingCommentId
     );
   }
 
@@ -106,17 +120,28 @@ export default class MoviePopupView extends SmartView {
   #handleSubmit = (evt) => {
     evt.preventDefault();
 
-    this._callback.submitHandler({text: this._data.commentText, emoji: this._data.commentEmoji});
+    if (this._callback.submitHandler === undefined) {
+      return;
+    }
+
+    this._callback.submitHandler({commentText: this._data.commentText, commentEmoji: this._data.commentEmoji});
   }
 
   #closeButtonClickHandler = (evt) => {
     evt.preventDefault();
 
+    if (this._callback.closeHandler === undefined) {
+      return;
+    }
+
     this._callback.closeHandler();
   }
 
   #escKeyDownHandler = (evt) => {
-    if (evt.key !== Key.ESC) {
+    if (
+      this._callback.closeHandler === undefined
+      || evt.key !== Key.ESC
+    ) {
       return;
     }
 
@@ -154,13 +179,14 @@ export default class MoviePopupView extends SmartView {
   }
 
   #handleDeleteCommentButtonClick = (evt) => {
-    if (!evt.target.classList.contains('film-details__comment-delete')) {
+    if (
+      this._callback.deleteCommentButtonClickHandler === undefined
+      || !evt.target.classList.contains('film-details__comment-delete')
+    ) {
       return;
     }
 
     const commentId = evt.target.dataset.commentId;
-
-    console.log(this._callback);
 
     this._callback.deleteCommentButtonClickHandler(commentId);
   }

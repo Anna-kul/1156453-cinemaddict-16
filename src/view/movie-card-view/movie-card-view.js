@@ -1,3 +1,4 @@
+import {Category} from '../../constants';
 import SmartView  from '../smart-view.js';
 import createMovieCardTemplate from './movie-card-template';
 

@@ -1,6 +1,8 @@
 const Method = {
   GET: 'GET',
   PUT: 'PUT',
+  DELETE: 'DELETE',
+  POST: 'POST',
 };
 
 export default class ApiService {
@@ -12,6 +14,10 @@ export default class ApiService {
     this.#authorization = authorization;
   }
 
+  /**
+   * Возвращает комментарии фильма. При каждом запросе получает пачку из шести новых комментариев.
+   * Не баг, а фича
+   */
   getMovieComments(movieId) {
     return this.#load({url: `comments/${movieId}`})
       .then(ApiService.parseResponse);
@@ -30,9 +36,25 @@ export default class ApiService {
       headers: new Headers({'Content-Type': 'application/json'}),
     });
 
-    const parsedResponse = await ApiService.parseResponse(response);
+    return ApiService.parseResponse(response);
+  }
 
-    return parsedResponse;
+  deleteComment = (commentId) => this.#load({
+    url: `comments/${commentId}`,
+    method: Method.DELETE,
+  })
+
+  addComment = async (movieId, commentData) => {
+    const response = await this.#load({
+      url: `comments/${movieId}`,
+      method: Method.POST,
+      body: JSON.stringify(commentData),
+      headers: new Headers({'Content-Type': 'application/json'}),
+    });
+
+    return Promise.reject()
+
+    return ApiService.parseResponse(response);
   }
 
   #load = async ({

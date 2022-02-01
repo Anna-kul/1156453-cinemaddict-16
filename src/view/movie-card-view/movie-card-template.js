@@ -1,9 +1,9 @@
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 
-dayjs.extend(duration);
+import {Category} from '../../constants';
 
-import {CategoryType} from '../../utils/const';
+dayjs.extend(duration);
 
 const FILM_CARD_CONTROLS_ITEM_ACTIVE_CLASS_NAME = 'film-card__controls-item--active';
 
@@ -30,21 +30,21 @@ const createMovieCardTemplate = (movie) => {
           <button
             class="film-card__controls-item film-card__controls-item--add-to-watchlist ${watchlistClassName}"
             type="button"
-            data-category ="${CategoryType.WATCHLIST}"
+            data-category ="${Category.WATCHLIST}"
           >
             Add to watchlist
           </button>
           <button
             class="film-card__controls-item film-card__controls-item--mark-as-watched ${watchedClassName}"
             type="button"
-            data-category ="${CategoryType.WATCHED}"
+            data-category ="${Category.WATCHED}"
           >
             Mark as watched
           </button>
           <button
             class="film-card__controls-item film-card__controls-item--favorite ${favoriteClassName}"
             type="button"
-            data-category="${CategoryType.FAVORITE}"
+            data-category="${Category.FAVORITE}"
           >
             Mark as favorite
           </button>

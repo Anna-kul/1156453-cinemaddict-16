@@ -1,26 +1,23 @@
-import createCommentTemplate from './comment-template';
 import createNewCommentFormTemplate from './new-comment-form-template';
+import createCommentsTitleTemplate from './comments-title-template';
+import createCommentsListTemplate from './comments-list-template';
 
-const createCommentsTemplate = (movie, comments, comment, isLoading, isCommentDeleting) => (
+const createCommentsTemplate = (
+  movie,
+  comments,
+  comment,
+  isLoading,
+  isCommentDeleting,
+  isCommentFormShaking,
+  shakingCommentId,
+) => (
   `<div class="film-details__bottom-container">
     <section class="film-details__comments-wrap">
-      <h3 class="film-details__comments-title">
-       ${movie.comments.length > 0
-    ? `Comments <span class="film-details__comments-count">${movie.comments.length}</span>`
-    : 'No comments'
-  }
-      </h3>
+      ${createCommentsTitleTemplate(comments?.length ?? 0)}
 
-      ${isLoading ? (
-    'Loading...'
-  ) : (
-    `<ul class="film-details__comments-list">
-      ${comments.reduce((html, currentComment) => html+createCommentTemplate(currentComment, isCommentDeleting), '')}
-    </ul>`
-  )}
-      
+      ${createCommentsListTemplate(isLoading, comments, isCommentDeleting, shakingCommentId)}
 
-      ${createNewCommentFormTemplate(comment)}
+      ${createNewCommentFormTemplate(comment, isCommentFormShaking)}
     </section>
   </div>`
 );

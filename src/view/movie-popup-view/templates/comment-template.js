@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 
-const createCommentTemplate = (comment, isCommentDeleting) => (
-  `<li class="film-details__comment">
+const createCommentTemplate = (comment, isCommentDeleting, isCommentShaking) => (
+  `<li class="film-details__comment ${isCommentShaking ? 'shake' : ''}">
     <span class="film-details__comment-emoji">
       <img src="./images/emoji/${comment.emoji}.png" width="55" height="55" alt="emoji-${comment.emoji}">
     </span>

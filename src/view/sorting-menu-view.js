@@ -1,36 +1,61 @@
-import AbstractView from './abstract-view';
-export default class SortingMenuView extends AbstractView {
-    #sortings = null;
+import SmartView from './smart-view';
 
-    constructor(sortings){
+export default class SortingMenuView extends SmartView {
+    _data = {items: [], activeItemId: null};
+
+    constructor({items}){
       super();
-      this.#sortings = sortings;
+
+      this._data.items = items;
+
+      const [firstItem] = items;
+
+      this._data.activeItemId = firstItem.id;
     }
 
     get template() {
-      return `<ul class="sort">
-    ${this.#sortings.reduce((htmlString, item) => {
-        htmlString += `<li><a href="#" class="sort__button${item.active ? ' sort__button--active': ''}" id="${item.id}">${item.title}</a></li>`;
-        return htmlString;
-      }, '')}
-   
-  </ul>`;
+      const {items, activeItemId} = this._data;
+      return (
+        `<ul class="sort">
+            ${items.reduce((htmlString, item) => htmlString+(
+          `<li>
+            <a href="#" class="sort__button ${item.id === activeItemId ? 'sort__button--active' : ''}" id="${item.id}">
+              ${item.title}
+            </a>
+          </li>`
+        ), '')}
+        </ul>`
+      );
     }
 
-    sortingLinkClickHandler = (evt) => {
+    setItemClickHandler = (handler) => {
+      this._callback.itemClickHandler = handler;
+
+      this.elem.addEventListener('click', this.#itemClickHandler);
+    }
+
+    #itemClickHandler = (evt) => {
+      if (!evt.target.classList.contains('sort__button')) {
+        return;
+      }
+
       evt.preventDefault();
 
-      const sortingLink = evt.target;
+      if (this._callback.itemClickHandler === undefined) {
+        return;
+      }
 
-      this._callback.sortingLink(sortingLink.id);
+      this._callback.itemClickHandler(evt.target.id);
     }
 
-    setSorgingLinkClickHandler = (handler) => {
-      this._callback.sortingLink = handler;
+    removeElement() {
+      this.elem.removeEventListener('click', this.#itemClickHandler);
 
-      this.elem.querySelectorAll('.sort__button').forEach((sortingLink) => {
-        sortingLink.addEventListener('click', this.sortingLinkClickHandler);
-      });
+      super.removeElement();
+    }
+
+    restoreHandlers() {
+      this.elem.addEventListener('click', this.#itemClickHandler);
     }
 }
 

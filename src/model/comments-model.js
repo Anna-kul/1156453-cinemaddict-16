@@ -1,5 +1,4 @@
-import AbstractModel from './abstract-model';
-import {ChangeType} from '../utils/const.js';
+import AbstractModel, {ChangeType} from './abstract-model';
 
 class CommentsModelError extends Error {}
 
@@ -33,22 +32,36 @@ export default class CommentsModel extends AbstractModel {
 
     const adaptedMovieComments = this.#adaptComments(movieComments);
 
-    this._data = {...(this.comments || {}), ...adaptedMovieComments};
+    this._data = {...(this._data || {}), ...adaptedMovieComments};
 
     this._notifyObservers(ChangeType.MAJOR);
   }
 
   async deleteComment(commentId) {
     try {
-      this.getComment(commentId);
+      await this.#apiService.deleteComment(commentId);
 
-      await this.apiService.deleteComment(commentId);
-
-      this._data = this._data.filter(({id: currentCommentId}) => currentCommentId === commentId);
+      delete this._data[commentId];
 
       this._notifyObservers(ChangeType.MINOR);
     } catch (error) {
-      return Promise.resolve();
+      console.error(error);
+
+      return Promise.reject(error);
+    }
+  }
+
+  async addComment(movieId, commentData) {
+    try {
+      const {comments} = await this.#apiService.addComment(movieId, commentData);
+
+      this._data = {...(this._data || {}), ...this.#adaptComments(comments)};
+
+      this._notifyObservers(ChangeType.MINOR);
+    } catch (error) {
+      console.error(error);
+
+      return Promise.reject(error);
     }
   }
 

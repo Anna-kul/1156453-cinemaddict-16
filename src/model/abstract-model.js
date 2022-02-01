@@ -1,3 +1,8 @@
+export const ChangeType = {
+  MINOR: 'minor',
+  MAJOR: 'major',
+};
+
 export default class AbstractModel {
     #observers = new Set();
     _data = null;
@@ -21,6 +26,7 @@ export default class AbstractModel {
     }
 
     _notifyObservers(changeType) {
+      console.log('Model Event', this.constructor.name);
       this.#observers.forEach((observer) => {
         observer(this._data, changeType);
       });

@@ -1,9 +1,17 @@
-import {CategoryType} from '../../../utils/const';
+import {Category} from '../../../constants';
 
 import createInfoTemplate from './info-template';
 import createCommentsTemplate from './comments-template';
 
-const createMoviePopupTemplate = (movie, comments, comment, isLoading, isCommentDeleting) => {
+const createMoviePopupTemplate = (
+  movie,
+  comments,
+  comment,
+  isLoading,
+  isCommentDeleting,
+  isCommentFormShaking,
+  shakingCommentId,
+) => {
   const watchlistClassName = movie.isWatchlist
     ? 'film-details__control-button--active film-details__control-button--watchlist'
     : 'film-details__control-button--watchlist';
@@ -34,13 +42,13 @@ const createMoviePopupTemplate = (movie, comments, comment, isLoading, isComment
           </div>
 
           <section class="film-details__controls">
-            <button type="button" class="film-details__control-button ${watchlistClassName}" id="watchlist" data-category ="${CategoryType.WATCHLIST}" name="watchlist">Add to watchlist</button>
-            <button type="button" class="film-details__control-button ${watchedClassName}" id="watched" data-category ="${CategoryType.WATCHED}" name="watched">Already watched</button>
-            <button type="button" class="film-details__control-button ${favoriteClassName}" id="favorite" data-category ="${CategoryType.FAVORITE}" name="favorite">Add to favorites</button>
+            <button type="button" class="film-details__control-button ${watchlistClassName}" id="watchlist" data-category ="${Category.WATCHLIST}" name="watchlist">Add to watchlist</button>
+            <button type="button" class="film-details__control-button ${watchedClassName}" id="watched" data-category ="${Category.WATCHED}" name="watched">Already watched</button>
+            <button type="button" class="film-details__control-button ${favoriteClassName}" id="favorite" data-category ="${Category.FAVORITE}" name="favorite">Add to favorites</button>
           </section>
         </div>
 
-        ${createCommentsTemplate(movie, comments, comment, isLoading, isCommentDeleting)}
+        ${createCommentsTemplate(movie, comments, comment, isLoading, isCommentDeleting, isCommentFormShaking, shakingCommentId)}
 
       </form>
     </section>`

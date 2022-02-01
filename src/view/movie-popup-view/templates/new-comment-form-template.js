@@ -1,5 +1,5 @@
-const createNewCommentFormTemplate = (comment) => (
-  `<div class="film-details__new-comment">
+const createNewCommentFormTemplate = (comment, isCommentFormShaking) => (
+  `<div class="film-details__new-comment ${isCommentFormShaking ? 'shake' : ''}">
     <div class="film-details__add-emoji-label">
       ${comment.emoji ? `<img src="images/emoji/${comment.emoji}.png" width="55" height="55" alt="emoji-${comment.emoji}">` : ''}
     </div>

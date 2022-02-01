@@ -1,12 +1,56 @@
-import AbstractModel from './abstract-model';
-import {ChangeType} from '../utils/const.js';
-import {MOVIE_DATA_FIELDS, Sorting} from '../utils/const.js';
-import {Filter} from './filters-model.js';
+import AbstractModel, {ChangeType} from './abstract-model';
+
+export const MOVIE_DATA_FIELDS = [
+  'poster',
+  'title',
+  'rating',
+  'releaseDate',
+  'description',
+  'duration',
+  'genre',
+  'comments',
+  'isWatchlist',
+  'isWatched',
+  'isFavorite',
+  'ageRating',
+  'director',
+  'writers',
+  'actors',
+  'country',
+];
 
 class MoviesModelError extends Error {}
+
+const UserRank = {
+  NOVICE: 'Novice',
+  FAN: 'Fan',
+  MOVIE_BUFF: 'Movie buff',
+};
+
+export const Filter = {
+  ALL: 'all',
+  WATCHLIST: 'watchlist',
+  WATCHLIST_TODAY: 'watchlist-today',
+  WATCHLIST_WEEK: 'watchlist-week',
+  WATCHLIST_MONTH: 'watchlist-month',
+  WATCHLIST_YEAR: 'watchlist-year',
+  HISTORY: 'history',
+  FAVORITES: 'favorites',
+};
+
+export const Sorting = {
+  DEFAULT: 'default',
+  DATE: 'date',
+  RATING: 'rating',
+};
+
+const watchedMoviesAmountByUserRank = {
+  [UserRank.NOVICE]: 1,
+  [UserRank.FAN]: 11,
+  [UserRank.MOVIE_BUFF]: 21,
+};
+
 export default class MoviesModel extends AbstractModel {
-  #filter = Filter.ALL;
-  #sorting = Sorting.DEFAULT;
   #apiService = null;
 
   constructor(apiService) {
@@ -26,11 +70,30 @@ export default class MoviesModel extends AbstractModel {
   }
 
   get movies() {
-    let movies = Object.values(this._data);
+    return Object.values(this._data || {});
 
-    switch (this.#filter) {
+    return [];
+  }
+
+  getMovies({filter, sorting}) {
+    let movies = this.movies;
+
+    switch (filter) {
       case Filter.WATCHLIST:
         movies = movies.filter(({isWatchlist}) => isWatchlist);
+        break;
+
+      case Filter.WATCHLIST_TODAY:
+        movies = movies.filter(() => );
+        break;
+      case Filter.WATCHLIST_WEEK:
+        movies = movies.filter(() => );
+        break;
+      case Filter.WATCHLIST_MONTH:
+        movies = movies.filter(() => );
+        break;
+      case Filter.WATCHLIST_YEAR:
+        movies = movies.filter(() => );
         break;
 
       case Filter.HISTORY:
@@ -41,9 +104,9 @@ export default class MoviesModel extends AbstractModel {
         movies = movies.filter(({isFavorite}) => isFavorite);
     }
 
-    switch (this.#sorting) {
+    switch (sorting) {
       case Sorting.DATE:
-        movies.sort(({dateRelease: aDateRelease}, {dateRelease: bDateRelease}) =>  new Date(aDateRelease) - new Date(bDateRelease));
+        movies.sort(({releaseDate: aReleaseDate}, {releaseDate: bReleaseDate}) => bReleaseDate.getTime() - aReleaseDate.getTime());
         break;
 
       case Sorting.RATING:
@@ -57,29 +120,16 @@ export default class MoviesModel extends AbstractModel {
     try {
       const movies = await this.#apiService.getMovies();
 
-      const adaptedMovies = movies.map(this.#adaptMovie);
-
-      this.movies = adaptedMovies;
+      this.movies = movies.map(this.#adaptMovie);
     } catch (error) {
+      console.error(error);
+
       this.movies = [];
     }
   }
 
-  setFilter(filter) {
-    this.#filter = filter;
-  }
-
-  getFilter() {
-    return this.#filter;
-  }
-
-  setSorting(sorting) {
-    this.#sorting = sorting;
-    this._notifyObservers(ChangeType.MAJOR);
-  }
-
   updateMovie(id, movieData) {
-    this.checkMovieData(movieData);
+    this.#validateMovieData(movieData);
 
     const movie = this.getMovie(id);
 
@@ -92,7 +142,7 @@ export default class MoviesModel extends AbstractModel {
     this._notifyObservers(ChangeType.MINOR);
   }
 
-  checkMovieData(movieData) {
+  #validateMovieData = (movieData) => {
     Object.keys(movieData).forEach((key) => {
       if (!MOVIE_DATA_FIELDS.includes(key)) {
         throw new MoviesModelError(`Unsupported key '${key}' in MoviesModel.`);
@@ -131,4 +181,51 @@ export default class MoviesModel extends AbstractModel {
     poster: movie.film_info.poster,
     rating: movie.film_info.total_rating,
   })
+
+  getMoviesStatistic() {
+    const watchedMovies = this.movies.filter(({isWatched}) => isWatched);
+
+    const viewsByGenre = {};
+
+    for (const movie of watchedMovies) {
+      for (const genre of movie.genre) {
+        if (viewsByGenre[genre] === undefined) {
+          viewsByGenre[genre] = 0;
+        } else {
+          viewsByGenre[genre] += 1;
+        }
+      }
+    }
+
+    let topGenre;
+    let views = 0;
+
+    for (const [key, value] of Object.entries(viewsByGenre)) {
+      if (value > views) {
+        topGenre = key;
+        views = value;
+      }
+    }
+
+    const totalDuration = watchedMovies.reduce((acc, {duration}) => acc + duration, 0);
+
+    return {viewsByGenre, totalDuration, watchedMoviesAmount: watchedMovies.length, topGenre};
+  }
+
+  getUserRank = () => {
+    let userRank = '';
+
+    const watchedMoviesAmount = this.movies.filter(({isWatched}) => isWatched).length;
+
+    if (watchedMoviesAmount >= watchedMoviesAmountByUserRank[UserRank.MOVIE_BUFF]) {
+      userRank = UserRank.MOVIE_BUFF;
+
+    } else if (watchedMoviesAmount >= watchedMoviesAmountByUserRank[UserRank.FAN]){
+      userRank = UserRank.FAN;
+    } else if (watchedMoviesAmount >= watchedMoviesAmountByUserRank[UserRank.NOVICE]) {
+      userRank = UserRank.NOVICE;
+    }
+
+    return userRank;
+  }
 }

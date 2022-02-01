@@ -1,7 +1,7 @@
 import {render, RenderPosition, replace, remove} from '../utils/render.js';
 import MovieCardView from '../view/movie-card-view/movie-card-view.js';
 import MoviePopupView from '../view/movie-popup-view/movie-popup-view.js';
-import {ChangeType} from '../utils/const';
+import {ChangeType} from '../model/abstract-model';
 
 /**
  * Имя класса для body, с помощью которого убирается вертикальная полоса прокрутки
@@ -17,7 +17,6 @@ export class MoviePresenter {
 
   #moviesModel = null;
   #commentsModel = null;
-
 
   constructor(filmContainer, moviesModel, commentsModel){
     this.#root = filmContainer;
@@ -53,14 +52,20 @@ export class MoviePresenter {
     remove(prevMovieCardView);
   }
 
-  #handleMoviePopupOpenerClick = () => {
-    this.#renderMoviePopup();
-    this.#commentsModel.getMovieComments(this.#movie.id).then(() => {
-      this.#moviePopupView.updateData({isLoading: false});
-    });
+  destroy = () => {
+    remove(this.#movieCardView);
+    this.#moviesModel.removeObserver(this.#handleMoviesModelChange);
+    this.#commentsModel.removeObserver(this.#handleCommentsModelChange);
+    this.#removeMoviePopupView();
   }
 
-  #renderMoviePopup = () => {
+  #removeMoviePopupView = () => {
+    remove(this.#moviePopupView);
+
+    document.body.classList.remove(HIDE_OVERFLOW_CLASS_NAME);
+  }
+
+  #handleMoviePopupOpenerClick = () => {
     this.#moviePopupView.setCloseHandler(this.#handleMoviePopupClose);
     this.#moviePopupView.setChangeHandler(this.#handleMoviePopupChange);
     this.#moviePopupView.setAddToFavoritesButtonClickHandler(this.#handleAddToFavoritesButtonClick);
@@ -72,16 +77,14 @@ export class MoviePresenter {
     render(document.body, this.#moviePopupView, RenderPosition.BEFOREEND);
 
     document.body.classList.add(HIDE_OVERFLOW_CLASS_NAME);
-  }
 
-  #removeMoviePopup = () => {
-    remove(this.#moviePopupView);
-
-    document.body.classList.remove(HIDE_OVERFLOW_CLASS_NAME);
+    this.#commentsModel.getMovieComments(this.#movie.id).then(() => {
+      this.#moviePopupView.updateData({isLoading: false, comments: this.#commentsModel.comments});
+    });
   }
 
   #handleMoviePopupClose = () => {
-    this.#removeMoviePopup();
+    this.#removeMoviePopupView();
   }
 
   #handleMoviesModelChange = (data, changeType) => {
@@ -111,8 +114,19 @@ export class MoviePresenter {
     this.#moviePopupView.updateData({movie});
   }
 
-  #handleCommentsModelChange = () => {
-    this.#moviePopupView.updateData({comments: this.#commentsModel.comments});
+  /**
+   * TODO: Продебажить добавление комментария, добавить экранировние с помощь he
+   */
+  #handleCommentsModelChange = (_, changeType) => {
+    if (changeType !== ChangeType.MINOR) {
+      return;
+    }
+
+    const movieComments = this.#commentsModel.comments
+      .filter(({id: currentCommentId}) => this.#movie.comments.includes(currentCommentId));
+
+    this.#moviesModel.updateMovie(this.#movie.id, {comments: movieComments.map(({id}) => id)});
+    this.#moviePopupView.updateData({comments: movieComments});
   }
 
   #handleAddToFavoritesButtonClick = () => {
@@ -128,26 +142,34 @@ export class MoviePresenter {
   }
 
   #handleDeleteCommentButtonClick = async (commentId) => {
-    this.moviePopupView.updateData({isCommentDeleting: true});
+    try {
+      this.#moviePopupView.updateData({isCommentDeleting: true});
 
-    await this.#commentsModel.deleteComment(commentId);
+      await this.#commentsModel.deleteComment(commentId);
 
-    this.moviePopupView.updateData({isCommentDeleting: false});
+      this.#moviePopupView.updateData({isCommentDeleting: false});
+    } catch {
+      this.#moviePopupView.updateData({isCommentDeleting: false, shakingCommentId: commentId});
+    }
   }
 
   #handleMoviePopupChange = (commentData) => {
     this.#moviePopupView.updateData(commentData);
   }
 
-  #handleMoviePopupSubmit = ({text, emoji}) => {
-    this.#moviesModel.addComment(this.#movie.id, {text, emoji});
-    this.#moviePopupView.updateData({comment: {text: '', emoji: ''}});
-  }
+  #handleMoviePopupSubmit = async ({commentText, commentEmoji}) => {
+    try {
+      const localComment = {
+        comment: commentText,
+        emotion: commentEmoji,
+        date: new Date().toISOString(),
+      };
 
-  destroy = () => {
-    remove(this.#movieCardView);
-    this.#moviesModel.removeObserver(this.#handleMoviesModelChange);
-    this.#commentsModel.removeObserver(this.#handleCommentsModelChange);
-    this.#removeMoviePopup();
+      await this.#commentsModel.addComment(this.#movie.id, localComment);
+
+      this.#moviePopupView.updateData({comment: {text: '', emoji: ''}});
+    } catch {
+      this.#moviePopupView.updateData({isCommentFormShaking: true});
+    }
   }
 }
