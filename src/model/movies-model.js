@@ -1,3 +1,5 @@
+import dayjs from 'dayjs';
+
 import AbstractModel, {ChangeType} from './abstract-model';
 
 export const MOVIE_DATA_FIELDS = [
@@ -30,10 +32,10 @@ const UserRank = {
 export const Filter = {
   ALL: 'all',
   WATCHLIST: 'watchlist',
-  WATCHLIST_TODAY: 'watchlist-today',
-  WATCHLIST_WEEK: 'watchlist-week',
-  WATCHLIST_MONTH: 'watchlist-month',
-  WATCHLIST_YEAR: 'watchlist-year',
+  HISTORY_TODAY: 'history-today',
+  HISTORY_WEEK: 'history-week',
+  HISTORY_MONTH: 'history-month',
+  HISTORY_YEAR: 'history-year',
   HISTORY: 'history',
   FAVORITES: 'favorites',
 };
@@ -83,18 +85,50 @@ export default class MoviesModel extends AbstractModel {
         movies = movies.filter(({isWatchlist}) => isWatchlist);
         break;
 
-        //   movies = movies.filter(() => );
-        //   break;
-        // case Filter.WATCHLIST_WEEK:
-        //   movies = movies.filter(() => );
-        //   break;
-        // case Filter.WATCHLIST_MONTH:
-        //   movies = movies.filter(() => );
-        //   break;
-        // case Filter.WATCHLIST_YEAR:
-        //   movies = movies.filter(() => );
-        //   break;
-        // case Filter.WATCHLIST_TODAY:
+      case Filter.HISTORY_WEEK:
+        movies = movies.filter(({watchingDate}) => {
+          if (watchingDate === null) {
+            return false;
+          }
+
+          const weekAgoDate = dayjs(new Date()).subtract(1, 'week');
+
+          return weekAgoDate.toDate() < watchingDate.getTime();
+        });
+        break;
+      case Filter.HISTORY_MONTH:
+        movies = movies.filter(({watchingDate}) => {
+          if (watchingDate === null) {
+            return false;
+          }
+
+          const monthAgoDate = dayjs(new Date()).subtract(1, 'months');
+
+          return monthAgoDate.toDate() < watchingDate.getTime();
+        });
+        break;
+      case Filter.HISTORY_YEAR:
+        movies = movies.filter(({watchingDate}) => {
+          if (watchingDate === null) {
+            return false;
+          }
+
+          const yearAgoDate = dayjs(new Date()).subtract(1, 'year');
+
+          return yearAgoDate.toDate() < watchingDate.getTime();
+        });
+        break;
+      case Filter.HISTORY_TODAY:
+        movies = movies.filter(({watchingDate}) => {
+          if (watchingDate === null) {
+            return false;
+          }
+
+          const todayDate = dayjs(new Date()).startOf('day');
+
+          return todayDate.toDate().getTime() === dayjs(watchingDate).startOf('day').toDate().getTime();
+        });
+        break;
 
       case Filter.HISTORY:
         movies = movies.filter(({isWatched}) => isWatched);
@@ -102,6 +136,7 @@ export default class MoviesModel extends AbstractModel {
 
       case Filter.FAVORITES:
         movies = movies.filter(({isFavorite}) => isFavorite);
+        break;
     }
 
     switch (sorting) {
@@ -173,7 +208,7 @@ export default class MoviesModel extends AbstractModel {
     isWatchlist: movie.user_details.watchlist,
     isWatched: movie.user_details.already_watched,
     isFavorite: movie.user_details.favorite,
-    watchingDate: movie.user_details.watching_date,
+    watchingDate: movie.user_details.watching_date === null ? null : new Date(movie.user_details.watching_date),
     ageRating: movie.film_info.age_rating,
     director: movie.film_info.director,
     writers: movie.film_info.writers,
@@ -183,15 +218,15 @@ export default class MoviesModel extends AbstractModel {
     rating: movie.film_info.total_rating,
   })
 
-  getMoviesStatistic() {
-    const watchedMovies = this.movies.filter(({isWatched}) => isWatched);
+  getMoviesStatistic({filter} = {}) {
+    const watchedMovies = this.getMovies({filter});
 
     const viewsByGenre = {};
 
     for (const movie of watchedMovies) {
       for (const genre of movie.genre) {
         if (viewsByGenre[genre] === undefined) {
-          viewsByGenre[genre] = 0;
+          viewsByGenre[genre] = 1;
         } else {
           viewsByGenre[genre] += 1;
         }

@@ -1,6 +1,7 @@
 import {remove, render, RenderPosition} from '../utils/render.js';
 import StatsView from '../view/stats-view/stats-view';
 import {Screen} from '../model/screens-model';
+import {Filter} from '../model/movies-model';
 
 export default class StatsPresenter {
   #root = null;
@@ -8,12 +9,14 @@ export default class StatsPresenter {
   #statsView = null;
 
   #moviesModel = null;
+  #filtersModel = null;
   #screensModel = null;
 
-  constructor(root, moviesModel, screensModel){
+  constructor(root, moviesModel, filtersModel, screensModel){
     this.#root = root;
     this.#moviesModel = moviesModel;
     this.#screensModel = screensModel;
+    this.#filtersModel = filtersModel;
 
     this.#statsView = new StatsView({userRank: this.#moviesModel.getUserRank(), moviesStatistic: this.#moviesModel.getMoviesStatistic()});
   }
@@ -21,6 +24,9 @@ export default class StatsPresenter {
   init = () => {
     this.#moviesModel.addObserver(this.#handleMoviesModelChange);
     this.#screensModel.addObserver(this.#handleScreensModelChange);
+    this.#filtersModel.addObserver(this.#handleFiltersModelChange);
+
+    this.#statsView.setFiltersChangeHandler(this.#handleFiltersChange);
 
     if (this.#screensModel.screen === Screen.STATS) {
       render(this.#root, this.#statsView, RenderPosition.BEFOREBEGIN);
@@ -36,13 +42,18 @@ export default class StatsPresenter {
 
     if (this.#screensModel.screen === Screen.STATS) {
       render(this.#root, this.#statsView, RenderPosition.BEFOREBEGIN);
+      this.#statsView.renderChart();
     }
   }
 
   #handleMoviesModelChange = () => {
     this.#reinit();
 
-    this.#statsView.updateData({userRank: this.#moviesModel.getUserRank(), moviesStatistic: this.#moviesModel.getMoviesStatistic()});
+    this.#statsView.updateData({
+      userRank: this.#moviesModel.getUserRank(),
+      moviesStatistic: this.#moviesModel.getMoviesStatistic({filter: this.#filtersModel.filter}),
+      activeStatisticFilter: this.#filtersModel.filter
+    });
   }
 
   #handleScreensModelChange = () => {
@@ -53,5 +64,19 @@ export default class StatsPresenter {
     }
 
     this.#clear();
+  }
+
+  #handleFiltersChange = (statisticFilter) => {
+    this.#filtersModel.filter = statisticFilter;
+  }
+
+  #handleFiltersModelChange = () => {
+    this.#reinit();
+
+    this.#statsView.updateData({
+      userRank: this.#moviesModel.getUserRank(),
+      moviesStatistic: this.#moviesModel.getMoviesStatistic({filter: this.#filtersModel.filter}),
+      activeStatisticFilter: this.#filtersModel.filter,
+    });
   }
 }
