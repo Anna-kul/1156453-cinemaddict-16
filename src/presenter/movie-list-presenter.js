@@ -1,137 +1,214 @@
-import FilmListContainerView from '../view/film-list-view.js';
+import MovieListView from '../view/movie-list-view.js';
 import BtnShowMoreView from '../view/btn-show-more-view.js';
-import { CategoryType } from '../const.js';
-import {render, RenderPosition, remove} from '../render.js';
+import {render, RenderPosition, remove} from '../utils/render.js';
 import {MoviePresenter} from './movie-presenter.js';
 import LoadingView from '../view/loading-view.js';
+import NoMoviesStubView, {NoMoviesStubViewVariant} from '../view/no-movies-stub-view/no-movies-stub-view.js';
+import {Screen} from '../model/screens-model';
+import {Filter, Sorting} from '../model/movies-model';
+import MoviePopupView from '../view/movie-popup-view/movie-popup-view';
+import {ChangeType} from '../model/abstract-model';
 
-export class MovieListPresenter {
-    #filmContainer = null;
-    #films = null;
-    #siteMainElement = null;
-    #moviePresenter = new Map()
-    #btnShowMore = null;
-    #popupView = null;
+const AVAILABLE_SCREENS = [
+  Screen.ALL_MOVIES,
+  Screen.FAVORITES,
+  Screen.HISTORY,
+  Screen.WATCHLIST,
+];
 
-    #filmListContainer = new FilmListContainerView();
-    #noFilms = new LoadingView();
+const noMoviesStubViewVariantByFilter = {
+  [Filter.ALL]: NoMoviesStubViewVariant.NO_MOVIES_IN_DB,
+  [Filter.FAVORITES]: NoMoviesStubViewVariant.NO_FAVORITE_MOVIES,
+  [Filter.WATCHLIST]: NoMoviesStubViewVariant.NO_MOVIES_TO_WATCH_NOW,
+  [Filter.HISTORY]: NoMoviesStubViewVariant.NO_WATCHED_MOVIES,
+};
 
-    constructor(siteMainElement, popupView){
-      this.#siteMainElement = siteMainElement;
-      this.#popupView = popupView;
+export default class MovieListPresenter {
+    static MOVIES_PER_LOAD_AMOUNT = 5;
+
+    #root = null;
+
+    #initedMoviePresenters = 0;
+
+    #btnShowMoreView = null;
+    #movieListView = new MovieListView();
+    #loadingView = new LoadingView();
+    #noMoviesStubView = null;
+    #moviePopupView = new MoviePopupView();
+
+    #moviePresenter = new Map();
+
+    #moviesModel = null;
+    #commentsModel = null;
+    #filtersModel = null;
+    #sortingsModel = null;
+    #screensModel = null;
+
+    constructor(root, moviesModel, commentsModel, filtersModel, sortingsModel, screensModel) {
+      this.#root = root;
+      this.#moviesModel = moviesModel;
+      this.#commentsModel = commentsModel;
+      this.#filtersModel = filtersModel;
+      this.#sortingsModel = sortingsModel;
+      this.#screensModel = screensModel;
+
+      this.#noMoviesStubView = new NoMoviesStubView({variant: this.#selectNoMoviesStubViewVariant()});
     }
 
-    init = (films) => {
-      this.#films = [...films];
-      this.#filmContainer = this.#filmListContainer.elem.querySelector('.films-list__container');
-      if(films.length === 0) {
-        this.#renderNoFilms();
+    initMoviePresenters() {
+      const filmListContainer = this.#movieListView.elem.querySelector('.films-list__container');
+
+      const movies = this.#selectMovies();
+
+      for (let i = this.#initedMoviePresenters; i < this.#initedMoviePresenters + 5; i++) {
+        if(i >= movies.length) {
+          this.#initedMoviePresenters = movies.length;
+          break;
+        }
+
+        const moviePresenter = new MoviePresenter(
+          filmListContainer,
+          this.#moviesModel,
+          this.#commentsModel,
+        );
+
+        moviePresenter.init(movies[i]);
+
+        this.#moviePresenter.set(movies[i].id, moviePresenter);
+      }
+
+      this.#initedMoviePresenters += 5;
+    }
+
+    initBtnShowMoreView() {
+      const movies = this.#selectMovies();
+
+      if (movies.length > MovieListPresenter.MOVIES_PER_LOAD_AMOUNT) {
+        this.#btnShowMoreView = new BtnShowMoreView();
+        this.#btnShowMoreView.setClickHandler(this.#handleBtnShowMoreViewClick);
+
+        render(this.#root, this.#btnShowMoreView, RenderPosition.BEFOREEND);
+      }
+    }
+
+    init = () => {
+      this.#screensModel.addObserver(this.#handleScreensModelChange);
+      this.#sortingsModel.addObserver(this.#handleSortingsModelChange);
+      this.#moviesModel.addObserver(this.#handleMoviesModelMajorChange);
+
+      if (!AVAILABLE_SCREENS.includes(this.#screensModel.screen)) {
         return;
       }
-      render(this.#siteMainElement, this.#filmListContainer, RenderPosition.BEFOREEND);
-      let curentCardCount = 0;
-      //показывает следующие 5 фильмов
-      const showCards = () => {
-        for (let i = curentCardCount; i < curentCardCount + 5; i++) {
-          //если фильмов не осталось, то не выводить
-          if(i >= this.#films.length) {
-            curentCardCount = this.#films.length;
-            break;
-          }
 
-          const moviePresenter = new MoviePresenter(this.#filmContainer);
-          moviePresenter.init(this.#films[i], i);
-          moviePresenter.setCategoryClickHandler(this.#categoryClickHandler);
-          moviePresenter.setClickHandler(this.#cardFilmClickHandler);
-          this.#moviePresenter.set(this.#films[i].id, moviePresenter);
+      const movies = this.#selectMovies();
 
-        }
-        curentCardCount += 5;
+      if (movies.length === 0) {
+        this.#renderNoMoviesStubView();
 
-      };
-      showCards();
-
-      this.#btnShowMore = new BtnShowMoreView();
-      this.#btnShowMore.setClickHandler(() => {
-        showCards();
-        // если все фильмы выведены удалить кнопку
-        if(curentCardCount >= this.#films.length){
-          this.#btnShowMore.elem.remove();
-        }
-      });
-
-      render(this.#siteMainElement, this.#btnShowMore, RenderPosition.BEFOREEND);
-    }
-
-    #openPopup = (film) => {
-      // какой фильм показать в попапе
-      this.#popupView.film = film;
-      //закрыть попап при клике на крестик
-      this.#popupView.setClickHandler(() => {
-        this.#closePopup();
-      });
-      document.body.appendChild(this.#popupView.elem);
-      document.body.classList.add('hide-overflow');
-      this.#popupView.setCategoryClickHandler(this.#popupCategoryClickHandler);
-      this.#popupView.setEscKeyPresshandler(this.#escKeydownHandler);
-    }
-
-    #closePopup = () => {
-      document.body.removeChild(this.#popupView.elem);
-      document.body.classList.remove('hide-overflow');
-      this.#popupView.removeElement();
-    }
-
-    // при клике на фильм открыть попап
-    #cardFilmClickHandler = (film) => {
-      this.#openPopup(film);
-    }
-
-    #popupCategoryClickHandler = (category, film) =>{
-      this.#changeCategory(category, film);
-      const moviePresenter = this.#moviePresenter.get(film.id);
-      moviePresenter.init(film);
-      moviePresenter.setCategoryClickHandler(this.#categoryClickHandler);
-      moviePresenter.setClickHandler(this.#cardFilmClickHandler);
-      const scrollTop = this.#popupView.elem.scrollTop;
-      this.#closePopup();
-      this.#openPopup(film);
-      this.#popupView.elem.scrollTop = scrollTop;
-    }
-
-    #categoryClickHandler = (category, film) =>{
-      this.#changeCategory(category, film);
-      const moviePresenter = this.#moviePresenter.get(film.id);
-      moviePresenter.init(film);
-      moviePresenter.setCategoryClickHandler(this.#categoryClickHandler);
-      moviePresenter.setClickHandler(this.#cardFilmClickHandler);
-    }
-
-    #changeCategory = (category, film) => {
-      switch (category){
-        case CategoryType.WATCHLIST:
-          film.isWatchlist = !film.isWatchlist;
-          break;
-        case CategoryType.WATCHED:
-          film.isWatched = !film.isWatched;
-          break;
-        case CategoryType.FAVORIT:
-          film.isFavorite = !film.isFavorite;
-          break;
+        return;
       }
+
+      render(this.#root, this.#movieListView, RenderPosition.BEFOREEND);
+
+      this.initMoviePresenters();
+      this.initBtnShowMoreView();
     }
 
-    #escKeydownHandler = () => {
-      this.#closePopup();
-    }
-
-    #renderNoFilms = () => {
-      render(this.#siteMainElement, this.#noFilms, RenderPosition.BEFOREEND);
-    }
-
-    #clearFilmList = () => {
+    clear() {
       this.#moviePresenter.forEach((presenter) => presenter.destroy());
       this.#moviePresenter.clear();
-      remove(this.#btnShowMore);
+      remove(this.#btnShowMoreView);
+      remove(this.#loadingView);
+      remove(this.#noMoviesStubView);
+      remove(this.#movieListView);
+
+      this.#initedMoviePresenters = 0;
+    }
+
+    #selectNoMoviesStubViewVariant = () => noMoviesStubViewVariantByFilter[this.#filtersModel.filter];
+
+    #renderNoMoviesStubView = () => {
+      remove(this.#movieListView);
+      render(this.#root, this.#noMoviesStubView, RenderPosition.BEFOREEND);
+
+      this.#noMoviesStubView.updateData({variant: this.#selectNoMoviesStubViewVariant()});
+    }
+
+    #reinit = () => {
+      this.clear();
+
+      const movies = this.#selectMovies();
+
+      if (movies.length === 0) {
+        this.#renderNoMoviesStubView();
+
+        return;
+      }
+
+      render(this.#root, this.#movieListView, RenderPosition.BEFOREEND);
+
+      this.initMoviePresenters();
+      this.initBtnShowMoreView();
+    }
+
+    #selectMovies = () => {
+      let movies = this.#moviesModel.movies;
+
+      switch (this.#filtersModel.filter) {
+        case Filter.WATCHLIST:
+          movies = movies.filter(({isWatchlist}) => isWatchlist);
+          break;
+
+        case Filter.HISTORY:
+          movies = movies.filter(({isWatched}) => isWatched);
+          break;
+
+        case Filter.FAVORITES:
+          movies = movies.filter(({isFavorite}) => isFavorite);
+      }
+
+      switch (this.#sortingsModel.sorting) {
+        case Sorting.DATE:
+          movies.sort(({releaseDate: aReleaseDate}, {releaseDate: bReleaseDate}) => bReleaseDate.getTime() - aReleaseDate.getTime());
+          break;
+
+        case Sorting.RATING:
+          movies.sort(({rating: aRating}, {rating: bRating}) => Number(bRating) - Number(aRating));
+      }
+
+      return movies;
+    }
+
+    #handleMoviesModelMajorChange = (_, changeType) => {
+      if (changeType !== ChangeType.MAJOR) {
+        return;
+      }
+
+      this.#reinit();
+    }
+
+    #handleSortingsModelChange = () => {
+      this.#reinit();
+    }
+
+    #handleScreensModelChange = () => {
+      if (AVAILABLE_SCREENS.includes(this.#screensModel.screen)) {
+        this.#reinit();
+
+        return;
+      }
+
+      this.clear();
+    }
+
+    #handleBtnShowMoreViewClick = () => {
+      this.initMoviePresenters();
+
+      const movies = this.#selectMovies();
+
+      if(this.#initedMoviePresenters >= movies.length){
+        remove(this.#btnShowMoreView);
+      }
     }
 }
+

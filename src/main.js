@@ -1,23 +1,60 @@
-import {generateCardFilm} from './mock/film.js';
-import UserRankView from './view/users-rank-view.js';
-import MenuNavigationView from './view/site-menu-view.js';
-import {FilterMenuView} from './view/site-menu-view.js';
-import {render, RenderPosition} from './render.js';
-import {generateNavigationSiteMenu, generateFilters} from './mock/site-menu.js';
-import { MovieListPresenter } from './presenter/movie-list-presenter.js';
-import PopupView from './view/popup-view.js';
+import {API_AUTHORIZATION_TOKEN, API_ENDPOINT} from './constants';
 
-const FILM_COUNT = 0;
-export const films = Array.from({length: FILM_COUNT}, generateCardFilm);
+import MovieListPresenter from './presenter/movie-list-presenter.js';
+import NavigationMenuPresenter from './presenter/navigation-menu-presenter.js';
+import StatsPresenter from './presenter/stats-presenter';
+import SortingMenuPresenter from './presenter/sorting-menu-presenter';
+import UserRankPresenter from './presenter/user-rank-presenter';
 
-const header = document.querySelector('.header');
-render(header,new UserRankView, RenderPosition.BEFOREEND);
+import MoviesModel from './model/movies-model';
+import CommentsModel from './model/comments-model';
+import FiltersModel from './model/filters-model.js';
+import ApiService from './service/api-service';
+import ScreensModel from './model/screens-model';
+import SortingsModel from './model/sortings-model';
 
 const siteMainElement = document.querySelector('.main');
+const header = document.querySelector('.header');
 
-render(siteMainElement, new MenuNavigationView(generateNavigationSiteMenu()), RenderPosition.BEFOREEND);
-render(siteMainElement, new FilterMenuView(generateFilters()), RenderPosition.BEFOREEND);
+const apiService = new ApiService(API_ENDPOINT, API_AUTHORIZATION_TOKEN);
 
-const popupView = new PopupView();
-const movieListPresenter = new MovieListPresenter(siteMainElement, popupView);
-movieListPresenter.init(films);
+const commentsModel = new CommentsModel(apiService);
+const moviesModel = new MoviesModel(apiService);
+const filtersModel = new FiltersModel();
+const sortingsModel = new SortingsModel();
+const screensModel = new ScreensModel();
+
+const sortingMenuPresenter = new SortingMenuPresenter(siteMainElement, sortingsModel, moviesModel, filtersModel, screensModel);
+const statsPresenter = new StatsPresenter(siteMainElement, moviesModel, screensModel);
+statsPresenter.init();
+const movieListPresenter = new MovieListPresenter(
+  siteMainElement,
+  moviesModel,
+  commentsModel,
+  filtersModel,
+  sortingsModel,
+  screensModel,
+);
+movieListPresenter.init();
+const userRankPresenter = new UserRankPresenter(header, moviesModel);
+userRankPresenter.init();
+const navigationMenuPresenter = new NavigationMenuPresenter(
+  siteMainElement,
+  filtersModel,
+  moviesModel,
+  screensModel,
+);
+navigationMenuPresenter.init();
+
+moviesModel.init().then(() => {
+  sortingMenuPresenter.init();
+});
+
+/**
+ * TODO:
+ * 1. Доработка модели для отправки обновленных данных фильма, в т. ч. создание коментария
+ * 2. Отображение статистики
+ * 3. Унифицировать метод сортировки и фильтрации
+ * 4. Посмотреть баг с последовательным переходом по фильтрам (не отображаются фильмы согласно новому фильтру)
+ * 5. Экранизация ввода комментария
+ */
