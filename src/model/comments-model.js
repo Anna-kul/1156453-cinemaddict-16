@@ -1,6 +1,6 @@
 import AbstractModel, {ChangeType} from './abstract-model';
 
-class CommentsModelError extends Error {}
+// class CommentsModelError extends Error {}
 
 export default class CommentsModel extends AbstractModel {
   #apiService = null;
@@ -45,6 +45,7 @@ export default class CommentsModel extends AbstractModel {
 
       this._notifyObservers(ChangeType.MINOR);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error(error);
 
       return Promise.reject(error);
@@ -59,6 +60,7 @@ export default class CommentsModel extends AbstractModel {
 
       this._notifyObservers(ChangeType.MINOR);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error(error);
 
       return Promise.reject(error);

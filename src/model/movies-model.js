@@ -72,7 +72,7 @@ export default class MoviesModel extends AbstractModel {
   get movies() {
     return Object.values(this._data || {});
 
-    return [];
+    //return [];
   }
 
   getMovies({filter, sorting}) {
@@ -83,18 +83,18 @@ export default class MoviesModel extends AbstractModel {
         movies = movies.filter(({isWatchlist}) => isWatchlist);
         break;
 
-      case Filter.WATCHLIST_TODAY:
-        movies = movies.filter(() => );
-        break;
-      case Filter.WATCHLIST_WEEK:
-        movies = movies.filter(() => );
-        break;
-      case Filter.WATCHLIST_MONTH:
-        movies = movies.filter(() => );
-        break;
-      case Filter.WATCHLIST_YEAR:
-        movies = movies.filter(() => );
-        break;
+        //   movies = movies.filter(() => );
+        //   break;
+        // case Filter.WATCHLIST_WEEK:
+        //   movies = movies.filter(() => );
+        //   break;
+        // case Filter.WATCHLIST_MONTH:
+        //   movies = movies.filter(() => );
+        //   break;
+        // case Filter.WATCHLIST_YEAR:
+        //   movies = movies.filter(() => );
+        //   break;
+        // case Filter.WATCHLIST_TODAY:
 
       case Filter.HISTORY:
         movies = movies.filter(({isWatched}) => isWatched);
@@ -122,6 +122,7 @@ export default class MoviesModel extends AbstractModel {
 
       this.movies = movies.map(this.#adaptMovie);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error(error);
 
       this.movies = [];
