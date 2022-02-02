@@ -26,7 +26,6 @@ export default class AbstractModel {
     }
 
     _notifyObservers(changeType) {
-      console.log('Model Event', this.constructor.name);
       this.#observers.forEach((observer) => {
         observer(this._data, changeType);
       });

@@ -35,11 +35,11 @@ export default class StatsView extends SmartView {
 
     #getChart = () => this.elem.querySelector('.statistic__chart');
 
-  setFiltersChangeHandler(handler) {
-    this._callback.filtersChangeHandler = handler;
+    setFiltersChangeHandler(handler) {
+      this._callback.filtersChangeHandler = handler;
 
-    this.#getFilters().addEventListener('change', this.#handleFiltersChange);
-  }
+      this.#getFilters().addEventListener('change', this.#handleFiltersChange);
+    }
 
   #handleFiltersChange = (evt) => {
     evt.preventDefault();

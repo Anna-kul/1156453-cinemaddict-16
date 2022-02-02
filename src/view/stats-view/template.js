@@ -5,7 +5,7 @@ dayjs.extend(duration);
 
 const BAR_HEIGHT = 50;
 
-const createStatsTemplate = ({userRank, moviesStatistic, activeStatisticFilter, chartLines}) => (
+const createStatsTemplate = ({userRank, moviesStatistic, activeStatisticFilter}) => (
   `<section class="statistic">
     <p class="statistic__rank">
       Your rank

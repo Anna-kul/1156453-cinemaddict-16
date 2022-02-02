@@ -17,13 +17,12 @@ export default class SortingMenuView extends SmartView {
       const {items, activeItemId} = this._data;
       return (
         `<ul class="sort">
-            ${items.reduce((htmlString, item) => htmlString+(
-          `<li>
+            ${items.reduce((htmlString, item) => `${htmlString
+        }<li>
             <a href="#" class="sort__button ${item.id === activeItemId ? 'sort__button--active' : ''}" id="${item.id}">
               ${item.title}
             </a>
-          </li>`
-        ), '')}
+          </li>`, '')}
         </ul>`
       );
     }

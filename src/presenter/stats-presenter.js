@@ -1,7 +1,7 @@
 import {remove, render, RenderPosition} from '../utils/render.js';
 import StatsView from '../view/stats-view/stats-view';
 import {Screen} from '../model/screens-model';
-import {Filter} from '../model/movies-model';
+
 
 export default class StatsPresenter {
   #root = null;

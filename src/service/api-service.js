@@ -52,8 +52,6 @@ export default class ApiService {
       headers: new Headers({'Content-Type': 'application/json'}),
     });
 
-    return Promise.reject()
-
     return ApiService.parseResponse(response);
   }
 
