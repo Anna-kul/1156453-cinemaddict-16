@@ -9,7 +9,7 @@ const filterByScreen = {
   [Screen.HISTORY]: Filter.HISTORY,
   [Screen.WATCHLIST]: Filter.WATCHLIST,
   [Screen.FAVORITES]: Filter.FAVORITES,
-  [Screen.STATS]: Filter.ALL,
+  [Screen.STATS]: Filter.HISTORY,
 };
 
 export default class NavigationMenuPresenter {

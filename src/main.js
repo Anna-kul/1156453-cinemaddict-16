@@ -25,7 +25,7 @@ const sortingsModel = new SortingsModel();
 const screensModel = new ScreensModel();
 
 const sortingMenuPresenter = new SortingMenuPresenter(siteMainElement, sortingsModel, moviesModel, filtersModel, screensModel);
-const statsPresenter = new StatsPresenter(siteMainElement, moviesModel, screensModel);
+const statsPresenter = new StatsPresenter(siteMainElement, moviesModel, filtersModel, screensModel);
 statsPresenter.init();
 const movieListPresenter = new MovieListPresenter(
   siteMainElement,
