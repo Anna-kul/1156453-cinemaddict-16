@@ -2,7 +2,6 @@ import {remove, render, RenderPosition} from '../utils/render.js';
 import SortingMenuView from '../view/sorting-menu-view';
 import {Screen} from '../model/screens-model';
 import {Sorting} from '../model/movies-model';
-import {Filter} from '../model/movies-model';
 
 const AVAILABLE_SCREENS = [
   Screen.ALL_MOVIES,
@@ -47,30 +46,35 @@ export default class SortingMenuPresenter {
   }
 
   init = () => {
-    this.#screensModel.addObserver(this.#handleScreensModelChange);
+    this.#filtersModel.addObserver(this.#handleFiltersModelChange);
     this.#sortingsModel.addObserver(this.#handleSortingsModelChange);
-
-    this.#sortingMenuView.setItemClickHandler(this.#handleSortingMenuItemClick);
+    this.#moviesModel.addObserver(this.#handleMoviesModelChange);
 
     if (!AVAILABLE_SCREENS.includes(this.#screensModel.screen)) {
       return;
     }
 
-    const movies = this.#selectMovies();
+    const movies = this.#moviesModel.getMovies({filter: this.#filtersModel.filter, sorting: this.#sortingsModel.sorting});
 
     if (movies.length === 0) {
       return;
     }
+
+    this.#sortingMenuView.setItemClickHandler(this.#handleSortingMenuItemClick);
 
     render(this.#root, this.#sortingMenuView, RenderPosition.BEFOREBEGIN);
   }
 
   #reinit = () => {
-    const movies = this.#selectMovies();
+    this.#clear();
+
+    const movies = this.#moviesModel.getMovies({filter: this.#filtersModel.filter, sorting: this.#sortingsModel.sorting});
 
     if (movies.length === 0) {
       return;
     }
+
+    this.#sortingMenuView.setItemClickHandler(this.#handleSortingMenuItemClick);
 
     render(this.#root, this.#sortingMenuView, RenderPosition.BEFOREBEGIN);
   }
@@ -79,30 +83,15 @@ export default class SortingMenuPresenter {
     remove(this.#sortingMenuView);
   }
 
-  #selectMovies = () => {
-    let movies = this.#moviesModel.movies;
-
-    switch (this.#filtersModel.filter) {
-      case Filter.WATCHLIST:
-        movies = movies.filter(({isWatchlist}) => isWatchlist);
-        break;
-
-      case Filter.HISTORY:
-        movies = movies.filter(({isWatched}) => isWatched);
-        break;
-
-      case Filter.FAVORITES:
-        movies = movies.filter(({isFavorite}) => isFavorite);
-    }
-
-    return movies;
+  #handleMoviesModelChange = () => {
+    this.#reinit();
   }
 
   #handleSortingsModelChange = () => {
     this.#sortingMenuView.updateData({activeItemId: this.#sortingsModel.sorting});
   }
 
-  #handleScreensModelChange = () => {
+  #handleFiltersModelChange = () => {
     if (this.#screensModel.screen !== this.#screensModel.prevScreen && AVAILABLE_SCREENS.includes(this.#screensModel.screen)) {
       this.#reinit();
 

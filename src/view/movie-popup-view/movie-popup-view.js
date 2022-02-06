@@ -1,32 +1,36 @@
 import SmartView  from '../smart-view.js';
 
 import createMoviePopupTemplate from './templates/movie-popup-template';
+import debounce from '../../utils/debounce';
 
 const Key = {
   ESC: 'Escape',
   ENTER: 'Enter',
 };
 
-/**
- * TODO: Покачивание, если не удалось удалить комментарий
- */
+// public/css/main.css:1134
+const SHAKING_ANIMATION_DURATION = 600;
+
+const MOVIE_POPUP_CLASS_NAME = 'film-details';
+
+const COMMENT_CHANGE_DEBOUNCE_DELAY = 350;
+
+const COMMENT_INPUT_CLASS_NAME = 'film-details__comment-input';
 
 export default class MoviePopupView extends SmartView {
+  #shakingFormTimeoutId = null;
+  #shakingCommentTimeoutId = null;
+
   _data = {
     movie: null,
     comments: null,
     commentText: '',
     commentEmoji: '',
     isLoading: true,
-    isCommentDeleting: false,
-    /**
-     * Трясётся ли форма. Используется при неудачном создании комментария
-     */
+    deletingCommentId: null,
     isCommentFormShaking: false,
-    /**
-     * Идентификатор удаляемого комментария. Используется при неудачном удалении комментария
-     */
     shakingCommentId: null,
+    isCommentSubmitting: false,
   };
 
   constructor (movie) {
@@ -37,16 +41,136 @@ export default class MoviePopupView extends SmartView {
 
   get template() {
     document.addEventListener('keydown', this.#handleEnterPlusCtrlKeyDown);
+    document.addEventListener('click', this.#handleOuterClick, true);
+
+    const {
+      movie,
+      comments,
+      commentText,
+      commentEmoji,
+      isLoading,
+      deletingCommentId,
+      isCommentFormShaking,
+      shakingCommentId,
+      isCommentSubmitting,
+    } = this._data;
+
+    if (isCommentFormShaking) {
+      this.#shakingFormTimeoutId = setTimeout(() => {
+        this.#shakingFormTimeoutId = null;
+        this.updateData({isCommentFormShaking: false});
+      }, SHAKING_ANIMATION_DURATION);
+    }
+
+    if (shakingCommentId !== null) {
+      this.#shakingFormTimeoutId = setTimeout(() => {
+        this.#shakingFormTimeoutId = null;
+        this.updateData({shakingCommentId: null});
+      }, SHAKING_ANIMATION_DURATION);
+    }
 
     return createMoviePopupTemplate(
-      this._data.movie,
-      this._data.comments,
-      {text: this._data.commentText, emoji: this._data.commentEmoji},
-      this._data.isLoading,
-      this._data.isCommentDeleting,
-      this._data.isCommentFormShaking,
-      this._data.shakingCommentId
+      movie,
+      comments,
+      {text: commentText, emoji: commentEmoji},
+      isLoading,
+      deletingCommentId,
+      isCommentFormShaking,
+      shakingCommentId,
+      isCommentSubmitting,
     );
+  }
+
+  removeElement() {
+    if (this.#shakingFormTimeoutId !== null) {
+      clearTimeout(this.#shakingFormTimeoutId);
+      this.#shakingFormTimeoutId = null;
+    }
+
+    if (this.#shakingCommentTimeoutId !== null) {
+      clearTimeout(this.#shakingCommentTimeoutId);
+      this.#shakingCommentTimeoutId = null;
+    }
+
+    document.removeEventListener('keydown', this.#handleEscKeyDown);
+    document.removeEventListener('keydown', this.#handleEnterPlusCtrlKeyDown);
+    this.#getInner().removeEventListener('click', this.#handleDeleteCommentButtonClick);
+    document.removeEventListener('click', this.#handleOuterClick, true);
+
+    super.removeElement();
+  }
+
+  restoreHandlers() {
+    this.#getAddToWatchlistButton().addEventListener('click', this.#handleAddToWatchlistButtonClick);
+    this.#getAddToAlreadyWatchedButton().addEventListener('click', this.#handleAddToAlreadyWatchedButtonClick);
+    this.#getAddToFavoritesButton().addEventListener('click', this.#handleAddToFavoritesButtonClick);
+    this.#getInner().addEventListener('input', this.#handleCommentChange);
+    this.#getCloseButton().addEventListener('click', this.#handleCloseButtonClick);
+    this.#getInner().addEventListener('submit', this.#handleCommentSubmit);
+    document.addEventListener('keydown', this.#handleEscKeyDown);
+    document.addEventListener('keydown', this.#handleEnterPlusCtrlKeyDown);
+    this.#getInner().addEventListener('click', this.#handleDeleteCommentButtonClick);
+    document.addEventListener('click', this.#handleOuterClick, true);
+  }
+
+  updateElement() {
+    const isCommentInputFocused = document.activeElement.classList.contains(COMMENT_INPUT_CLASS_NAME);
+
+    super.updateElement();
+
+    if (!isCommentInputFocused) {
+      return;
+    }
+
+    const commentInput = this.#getCommentInput();
+
+    commentInput.focus();
+
+    commentInput.selectionStart = commentInput.value.length;
+    commentInput.selectionEnd = commentInput.value.length;
+  }
+
+  setCommentChangeHandler(handler) {
+    this._callback.commentChangeHandler = debounce(handler, COMMENT_CHANGE_DEBOUNCE_DELAY);
+
+    this.#getInner().addEventListener('input', this.#handleCommentChange);
+  }
+
+  setCloseHandler(handler) {
+    this._callback.closeHandler = handler;
+
+    this.#getCloseButton().addEventListener('click', this.#handleCloseButtonClick);
+    document.addEventListener('keydown', this.#handleEscKeyDown);
+  }
+
+  setAddToFavoritesButtonClickHandler(handler) {
+    this._callback.addToFavoritesButtonClickHandler = handler;
+
+    this.#getAddToFavoritesButton().addEventListener('click', this.#handleAddToFavoritesButtonClick);
+  }
+
+  setAddToAlreadyWatchedButtonClickHandler(handler) {
+    this._callback.addToAlreadyWatchedButtonClickHandler = handler;
+
+    this.#getAddToAlreadyWatchedButton().addEventListener('click', this.#handleAddToAlreadyWatchedButtonClick);
+  }
+
+  setAddToWatchlistButtonClickHandler(handler) {
+    this._callback.addToWatchlistButtonClickHandler = handler;
+
+    this.#getAddToWatchlistButton().addEventListener('click', this.#handleAddToWatchlistButtonClick);
+  }
+
+  setCommentSubmitHandler(handler) {
+    this._callback.commentSubmitHandler = handler;
+
+    this.#getInner().addEventListener('submit', this.#handleCommentSubmit);
+  }
+
+  setDeleteCommentButtonClickHandler(handler) {
+    this._callback.deleteCommentButtonClickHandler = handler;
+
+    this.#getInner().addEventListener('click', this.#handleDeleteCommentButtonClick);
   }
 
   #getInner = () => this.elem.querySelector('.film-details__inner');
@@ -61,73 +185,31 @@ export default class MoviePopupView extends SmartView {
 
   #getCommentInput = () => this.elem.querySelector('.film-details__comment-input');
 
-  setChangeHandler(handler) {
-    this._callback.changeHandler = handler;
+  #handleCommentChange = (evt) => {
+    const commentText = evt.currentTarget.elements.commentText.value;
+    const checkedEmojiInput = Array.from(evt.currentTarget.elements.commentEmoji).find(({checked}) => checked);
 
-    this.#getInner().addEventListener('change', this.#handleChange);
-  }
-
-  setCloseHandler(handler) {
-    this._callback.closeHandler = handler;
-
-    this.#getCloseButton().addEventListener('click', this.#closeButtonClickHandler);
-    document.addEventListener('keydown', this.#escKeyDownHandler);
-  }
-
-  setAddToFavoritesButtonClickHandler(handler) {
-    this._callback.addToFavoritesButtonClickHandler = handler;
-
-    this.#getAddToFavoritesButton().addEventListener('click', this.#addToFavoritesButtonClickHandler);
-  }
-
-  setAddToAlreadyWatchedButtonClickHandler(handler) {
-    this._callback.setAddToAlreadyWatchedButtonClickHandler = handler;
-
-    this.#getAddToAlreadyWatchedButton().addEventListener('click', this.#addToAlreadyWatchedButtonClickHandler);
-  }
-
-  setAddToWatchlistButtonClickHandler(handler) {
-    this._callback.addToWatchlistButtonClickHandler = handler;
-
-    this.#getAddToWatchlistButton().addEventListener('click', this.#addToWatchlistButtonClickHandler);
-  }
-
-  setSubmitHandler(handler) {
-    this._callback.submitHandler = handler;
-
-    this.#getInner().addEventListener('submit', this.#handleSubmit);
-  }
-
-  setDeleteCommentButtonClickHandler(handler) {
-    this._callback.deleteCommentButtonClickHandler = handler;
-
-    document.addEventListener('click', this.#handleDeleteCommentButtonClick);
-  }
-
-  #handleChange = (evt) => {
-    const formData = new FormData(evt.currentTarget);
-
-    const {commentText, commentEmoji} = Object.fromEntries(formData);
+    const commentEmoji = checkedEmojiInput?.value ?? '';
 
     const commentData = {
-      ...commentText && {commentText},
+      ...commentText !== undefined && {commentText},
       ...commentEmoji && {commentEmoji},
     };
 
-    this._callback.changeHandler(commentData);
+    this._callback.commentChangeHandler(commentData);
   }
 
-  #handleSubmit = (evt) => {
+  #handleCommentSubmit = (evt) => {
     evt.preventDefault();
 
-    if (this._callback.submitHandler === undefined) {
+    if (this._callback.commentSubmitHandler === undefined) {
       return;
     }
 
-    this._callback.submitHandler({commentText: this._data.commentText, commentEmoji: this._data.commentEmoji});
+    this._callback.commentSubmitHandler({commentText: this._data.commentText, commentEmoji: this._data.commentEmoji});
   }
 
-  #closeButtonClickHandler = (evt) => {
+  #handleCloseButtonClick = (evt) => {
     evt.preventDefault();
 
     if (this._callback.closeHandler === undefined) {
@@ -137,7 +219,7 @@ export default class MoviePopupView extends SmartView {
     this._callback.closeHandler();
   }
 
-  #escKeyDownHandler = (evt) => {
+  #handleEscKeyDown = (evt) => {
     if (
       this._callback.closeHandler === undefined
       || evt.key !== Key.ESC
@@ -147,24 +229,36 @@ export default class MoviePopupView extends SmartView {
 
     evt.preventDefault();
 
-    document.removeEventListener('keydown', this.#escKeyDownHandler);
+    document.removeEventListener('keydown', this.#handleEscKeyDown);
 
     this._callback.closeHandler();
   }
 
-  #addToFavoritesButtonClickHandler = (evt) => {
+  #handleOuterClick = (evt) => {
+    const isOuterClick = evt.target.closest(`.${MOVIE_POPUP_CLASS_NAME}`) !== null;
+
+    if (isOuterClick || this._callback.closeHandler === undefined) {
+      return;
+    }
+
+    evt.stopPropagation();
+
+    this._callback.closeHandler();
+  }
+
+  #handleAddToFavoritesButtonClick = (evt) => {
     evt.preventDefault();
 
     this._callback.addToFavoritesButtonClickHandler();
   }
 
-  #addToAlreadyWatchedButtonClickHandler = (evt) => {
+  #handleAddToAlreadyWatchedButtonClick = (evt) => {
     evt.preventDefault();
 
-    this._callback.setAddToAlreadyWatchedButtonClickHandler();
+    this._callback.addToAlreadyWatchedButtonClickHandler();
   }
 
-  #addToWatchlistButtonClickHandler = (evt) => {
+  #handleAddToWatchlistButtonClick = (evt) => {
     evt.preventDefault();
 
     this._callback.addToWatchlistButtonClickHandler();
@@ -189,25 +283,5 @@ export default class MoviePopupView extends SmartView {
     const commentId = evt.target.dataset.commentId;
 
     this._callback.deleteCommentButtonClickHandler(commentId);
-  }
-
-  restoreHandlers() {
-    this.#getAddToWatchlistButton().addEventListener('click', this.#addToWatchlistButtonClickHandler);
-    this.#getAddToAlreadyWatchedButton().addEventListener('click', this.#addToAlreadyWatchedButtonClickHandler);
-    this.#getAddToFavoritesButton().addEventListener('click', this.#addToFavoritesButtonClickHandler);
-    this.#getInner().addEventListener('change', this.#handleChange);
-    this.#getCloseButton().addEventListener('click', this.#closeButtonClickHandler);
-    this.#getInner().addEventListener('submit', this.#handleSubmit);
-    document.addEventListener('keydown', this.#escKeyDownHandler);
-    document.addEventListener('keydown', this.#handleEnterPlusCtrlKeyDown);
-    document.addEventListener('click', this.#handleDeleteCommentButtonClick);
-  }
-
-  removeElement() {
-    super.removeElement();
-
-    document.removeEventListener('keydown', this.#escKeyDownHandler);
-    document.removeEventListener('keydown', this.#handleEnterPlusCtrlKeyDown);
-    document.removeEventListener('click', this.#handleDeleteCommentButtonClick);
   }
 }

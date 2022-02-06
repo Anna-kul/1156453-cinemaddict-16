@@ -8,8 +8,6 @@ export default class AbstractModel {
       }
 
       this._data = data;
-
-      window[this.constructor.name] = this;
     }
 
     addObserver(observer) {

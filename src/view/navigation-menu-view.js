@@ -14,9 +14,6 @@ export default class NavigationMenuView extends SmartView {
     this._data.activeItemId = activeItemId;
   }
 
-  /*
-    Переключение экрана с подсветкой ссылки
-   */
   get template() {
     const {items, activeItemId} = this._data;
 
@@ -44,7 +41,17 @@ export default class NavigationMenuView extends SmartView {
     );
   }
 
-  #itemClickHandler = (evt) => {
+  restoreHandlers() {
+    this.elem.addEventListener('click', this.#handleItemClick);
+  }
+
+  setItemClickHandler = (handler) => {
+    this._callback.itemClickHandler = handler;
+
+    this.elem.addEventListener('click', this.#handleItemClick);
+  }
+
+  #handleItemClick = (evt) => {
     if (!evt.target.classList.contains(ITEM_CLASS_NAME)) {
       return;
     }
@@ -56,15 +63,5 @@ export default class NavigationMenuView extends SmartView {
     }
 
     this._callback.itemClickHandler(evt.target.id);
-  }
-
-  setItemClickHandler = (handler) => {
-    this._callback.itemClickHandler = handler;
-
-    this.elem.addEventListener('click', this.#itemClickHandler);
-  }
-
-  restoreHandlers() {
-    this.elem.addEventListener('click', this.#itemClickHandler);
   }
 }

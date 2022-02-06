@@ -18,10 +18,6 @@ export default class ScreensModel extends AbstractModel {
     return this._data.screen;
   }
 
-  get prevScreen() {
-    return this._data.prevScreen;
-  }
-
   set screen(screen) {
     if (screen === this.screen) {
       return;
@@ -31,5 +27,9 @@ export default class ScreensModel extends AbstractModel {
     this._data.screen = screen;
 
     this._notifyObservers(ChangeType.MAJOR);
+  }
+
+  get prevScreen() {
+    return this._data.prevScreen;
   }
 }

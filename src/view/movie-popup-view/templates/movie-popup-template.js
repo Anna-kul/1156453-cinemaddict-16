@@ -8,9 +8,10 @@ const createMoviePopupTemplate = (
   comments,
   comment,
   isLoading,
-  isCommentDeleting,
+  deletingCommentId,
   isCommentFormShaking,
   shakingCommentId,
+  isCommentSubmitting,
 ) => {
   const watchlistClassName = movie.isWatchlist
     ? 'film-details__control-button--active film-details__control-button--watchlist'
@@ -33,9 +34,9 @@ const createMoviePopupTemplate = (
           </div>
           <div class="film-details__info-wrap">
             <div class="film-details__poster">
-              <img class="film-details__poster-img" src="${movie.poster}" alt="">
+              <img class="film-details__poster-img" src="${movie.poster}" alt='Poster of the "${movie.title}"'>
 
-              <p class="film-details__age">${movie.ageRating}</p>
+              <p class="film-details__age">${movie.ageRating}+</p>
             </div>
 
             ${createInfoTemplate(movie)}
@@ -48,7 +49,7 @@ const createMoviePopupTemplate = (
           </section>
         </div>
 
-        ${createCommentsTemplate(movie, comments, comment, isLoading, isCommentDeleting, isCommentFormShaking, shakingCommentId)}
+        ${createCommentsTemplate(movie, comments, comment, isLoading, deletingCommentId, isCommentFormShaking, shakingCommentId, isCommentSubmitting)}
 
       </form>
     </section>`

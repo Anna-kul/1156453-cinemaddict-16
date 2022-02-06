@@ -35,27 +35,9 @@ export default class NavigationMenuPresenter {
     this.#moviesModel.addObserver(this.#handleMoviesModelChange);
     this.#screensModel.addObserver(this.#handleScreensModelChange);
 
-    this.#navigationMenuView.setItemClickHandler(this.#handleMenuLinkClickHandler);
+    this.#navigationMenuView.setItemClickHandler(this.#handleMenuLinkClick);
 
     render(this.#root, this.#navigationMenuView, RenderPosition.BEFOREBEGIN);
-  }
-
-  #handleFiltersModelMinorChange = (_, changeType) => {
-    if (changeType !== ChangeType.MINOR) {
-      return;
-    }
-
-    this.#navigationMenuView.updateData({
-      filters: this.#filtersModel.filters,
-    });
-  }
-
-  #handleScreensModelChange = () => {
-    this.#filtersModel.filter = filterByScreen[this.#screensModel.screen];
-
-    this.#navigationMenuView.updateData({
-      activeItemId: this.#screensModel.screen,
-    });
   }
 
   #selectNavigationMenuItems = () => [
@@ -76,11 +58,29 @@ export default class NavigationMenuPresenter {
     }
   ];
 
+  #handleFiltersModelMinorChange = (_, changeType) => {
+    if (changeType !== ChangeType.MINOR) {
+      return;
+    }
+
+    this.#navigationMenuView.updateData({
+      filters: this.#filtersModel.filters,
+    });
+  }
+
+  #handleScreensModelChange = () => {
+    this.#filtersModel.filter = filterByScreen[this.#screensModel.screen];
+
+    this.#navigationMenuView.updateData({
+      activeItemId: this.#screensModel.screen,
+    });
+  }
+
   #handleMoviesModelChange = () => {
     this.#navigationMenuView.updateData({items: this.#selectNavigationMenuItems()});
   }
 
-  #handleMenuLinkClickHandler = (activeItemId) => {
+  #handleMenuLinkClick = (activeItemId) => {
     this.#screensModel.screen = activeItemId;
   }
 }

@@ -11,8 +11,8 @@ export default class FiltersModel extends AbstractModel {
     return this._data.filter;
   }
 
-  set filter(filterId) {
-    this._data.filter = filterId;
+  set filter(filter) {
+    this._data.filter = filter;
     this._notifyObservers(ChangeType.MAJOR);
   }
 }
