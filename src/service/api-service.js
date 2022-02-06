@@ -14,10 +14,7 @@ export default class ApiService {
     this.#authorization = authorization;
   }
 
-  /**
-   * Возвращает комментарии фильма. При каждом запросе получает пачку из шести новых комментариев.
-   * Не баг, а фича
-   */
+
   getMovieComments(movieId) {
     return this.#load({url: `comments/${movieId}`})
       .then(ApiService.parseResponse);
@@ -28,9 +25,9 @@ export default class ApiService {
       .then(ApiService.parseResponse);
   }
 
-  updateMovie = async (movie) => {
+  updateMovie = async (movieId, movie) => {
     const response = await this.#load({
-      url: `movies/${movie.id}`,
+      url: `movies/${movieId}`,
       method: Method.PUT,
       body: JSON.stringify(movie),
       headers: new Headers({'Content-Type': 'application/json'}),

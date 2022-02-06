@@ -1,4 +1,5 @@
 import AbstractView  from './abstract-view.js';
+
 const createBtnShowMore = () =>  '<button class="films-list__show-more">Show more</button>';
 
 export default class BtnShowMoreView extends AbstractView {
@@ -6,22 +7,20 @@ export default class BtnShowMoreView extends AbstractView {
     return createBtnShowMore();
   }
 
-  setClickHandler = (callback) => {
-    // Мы могли бы сразу передать callback в addEventListener,
-    // но тогда бы для удаления обработчика в будущем,
-    // нам нужно было бы производить это снаружи, где-то там,
-    // где мы вызывали setClickHandler, что не всегда удобно
+  setClickHandler = (handler) => {
+    this._callback.clickHandler = handler;
 
-    // 1. Поэтому колбэк мы запишем во внутреннее свойство
-    this._callback.click = callback;
-    // 2. В addEventListener передадим абстрактный обработчик
-    this.elem.addEventListener('click', this.#clickHandler);
+    this.elem.addEventListener('click', this.#handleClick);
   }
 
-  #clickHandler = (evt) => {
+  #handleClick = (evt) => {
     evt.preventDefault();
-    // 3. А внутри абстрактного обработчика вызовем колбэк
-    this._callback.click();
+
+    if (this._callback.clickHandler === undefined) {
+      return;
+    }
+
+    this._callback.clickHandler();
   }
 }
 

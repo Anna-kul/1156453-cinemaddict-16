@@ -7,17 +7,18 @@ const createCommentsTemplate = (
   comments,
   comment,
   isLoading,
-  isCommentDeleting,
+  deletingCommentId,
   isCommentFormShaking,
   shakingCommentId,
+  isCommentSubmitting,
 ) => (
   `<div class="film-details__bottom-container">
     <section class="film-details__comments-wrap">
-      ${createCommentsTitleTemplate(comments?.length ?? 0)}
+      ${createCommentsTitleTemplate(movie.comments?.length ?? 0)}
 
-      ${createCommentsListTemplate(isLoading, comments, isCommentDeleting, shakingCommentId)}
+      ${createCommentsListTemplate(isLoading, comments, deletingCommentId, shakingCommentId)}
 
-      ${createNewCommentFormTemplate(comment, isCommentFormShaking)}
+      ${createNewCommentFormTemplate(comment, isCommentFormShaking, isCommentSubmitting)}
     </section>
   </div>`
 );

@@ -23,27 +23,39 @@ export default class StatsPresenter {
 
   init = () => {
     this.#moviesModel.addObserver(this.#handleMoviesModelChange);
-    this.#screensModel.addObserver(this.#handleScreensModelChange);
     this.#filtersModel.addObserver(this.#handleFiltersModelChange);
+
+    if (this.#screensModel.screen !== Screen.STATS) {
+      return;
+    }
 
     this.#statsView.setFiltersChangeHandler(this.#handleFiltersChange);
 
-    if (this.#screensModel.screen === Screen.STATS) {
-      render(this.#root, this.#statsView, RenderPosition.BEFOREBEGIN);
-    }
-  }
-
-  #clear = () => {
-    remove(this.#statsView);
+    render(this.#root, this.#statsView, RenderPosition.BEFOREBEGIN);
   }
 
   #reinit = () => {
     this.#clear();
 
-    if (this.#screensModel.screen === Screen.STATS) {
-      render(this.#root, this.#statsView, RenderPosition.BEFOREBEGIN);
-      this.#statsView.renderChart();
+    if (this.#screensModel.screen !== Screen.STATS) {
+      return;
     }
+
+    this.#statsView.setFiltersChangeHandler(this.#handleFiltersChange);
+
+    render(this.#root, this.#statsView, RenderPosition.BEFOREBEGIN);
+
+    this.#statsView.updateData({
+      userRank: this.#moviesModel.getUserRank(),
+      moviesStatistic: this.#moviesModel.getMoviesStatistic({filter: this.#filtersModel.filter}),
+      activeStatisticFilter: this.#filtersModel.filter,
+    });
+
+    this.#statsView.renderChart();
+  }
+
+  #clear = () => {
+    remove(this.#statsView);
   }
 
   #handleMoviesModelChange = () => {
@@ -56,9 +68,9 @@ export default class StatsPresenter {
     });
   }
 
-  #handleScreensModelChange = () => {
+  #handleFiltersModelChange = () => {
     if (this.#screensModel.screen === Screen.STATS) {
-      render(this.#root, this.#statsView, RenderPosition.BEFOREEND);
+      this.#reinit();
 
       return;
     }
@@ -68,15 +80,5 @@ export default class StatsPresenter {
 
   #handleFiltersChange = (statisticFilter) => {
     this.#filtersModel.filter = statisticFilter;
-  }
-
-  #handleFiltersModelChange = () => {
-    this.#reinit();
-
-    this.#statsView.updateData({
-      userRank: this.#moviesModel.getUserRank(),
-      moviesStatistic: this.#moviesModel.getMoviesStatistic({filter: this.#filtersModel.filter}),
-      activeStatisticFilter: this.#filtersModel.filter,
-    });
   }
 }

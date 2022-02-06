@@ -27,13 +27,17 @@ export default class SortingMenuView extends SmartView {
       );
     }
 
+    restoreHandlers() {
+      this.elem.addEventListener('click', this.#handleItemClick);
+    }
+
     setItemClickHandler = (handler) => {
       this._callback.itemClickHandler = handler;
 
-      this.elem.addEventListener('click', this.#itemClickHandler);
+      this.elem.addEventListener('click', this.#handleItemClick);
     }
 
-    #itemClickHandler = (evt) => {
+    #handleItemClick = (evt) => {
       if (!evt.target.classList.contains('sort__button')) {
         return;
       }
@@ -45,16 +49,6 @@ export default class SortingMenuView extends SmartView {
       }
 
       this._callback.itemClickHandler(evt.target.id);
-    }
-
-    removeElement() {
-      this.elem.removeEventListener('click', this.#itemClickHandler);
-
-      super.removeElement();
-    }
-
-    restoreHandlers() {
-      this.elem.addEventListener('click', this.#itemClickHandler);
     }
 }
 

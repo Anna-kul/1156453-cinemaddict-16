@@ -1,6 +1,12 @@
 import AbstractModel, {ChangeType} from './abstract-model';
 
-// class CommentsModelError extends Error {}
+class CommentsModelError extends Error {}
+
+const COMMENT_DATA_FIELDS = [
+  'comment',
+  'emotion',
+  'date',
+];
 
 export default class CommentsModel extends AbstractModel {
   #apiService = null;
@@ -13,6 +19,10 @@ export default class CommentsModel extends AbstractModel {
     this.#apiService = apiService;
   }
 
+  get comments() {
+    return Object.values(this._data);
+  }
+
   set comments(comments) {
     this._data = comments.reduce((map, comment) => {
       map[comment.id] = comment;
@@ -23,62 +33,52 @@ export default class CommentsModel extends AbstractModel {
     this._notifyObservers(ChangeType.MAJOR);
   }
 
-  get comments() {
-    return Object.values(this._data);
-  }
-
   async getMovieComments(movieId) {
     const movieComments = await this.#apiService.getMovieComments(movieId);
 
-    const adaptedMovieComments = this.#adaptComments(movieComments);
+    this._data = this.#adaptCommentsToApp(movieComments);
 
-    this._data = {...(this._data || {}), ...adaptedMovieComments};
+    this._notifyObservers(ChangeType.MAJOR);
+  }
+
+  async addComment(movieId, commentData) {
+    this.#validateCommentData(commentData);
+
+    const {comments} = await this.#apiService.addComment(movieId, commentData);
+
+    this._data = this.#adaptCommentsToApp(comments);
 
     this._notifyObservers(ChangeType.MAJOR);
   }
 
   async deleteComment(commentId) {
-    try {
-      await this.#apiService.deleteComment(commentId);
+    await this.#apiService.deleteComment(commentId);
 
-      delete this._data[commentId];
+    delete this._data[commentId];
 
-      this._notifyObservers(ChangeType.MINOR);
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error(error);
-
-      return Promise.reject(error);
-    }
+    this._notifyObservers(ChangeType.MAJOR);
   }
 
-  async addComment(movieId, commentData) {
-    try {
-      const {comments} = await this.#apiService.addComment(movieId, commentData);
-
-      this._data = {...(this._data || {}), ...this.#adaptComments(comments)};
-
-      this._notifyObservers(ChangeType.MINOR);
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error(error);
-
-      return Promise.reject(error);
-    }
-  }
-
-  #adaptComment = (comment) => ({
+  #adaptCommentToApp = (comment) => ({
     ...comment,
     emoji: comment.emotion,
     text: comment.comment,
     date: new Date(comment.date),
   })
 
-  #adaptComments = (comments) => comments.reduce((map, comment) => {
-    const adaptedComment = this.#adaptComment(comment);
+  #adaptCommentsToApp = (comments) => comments.reduce((map, comment) => {
+    const adaptedComment = this.#adaptCommentToApp(comment);
 
     map[adaptedComment.id] = adaptedComment;
 
     return map;
   }, {})
+
+  #validateCommentData = (commentData) => {
+    Object.keys(commentData).forEach((key) => {
+      if (!COMMENT_DATA_FIELDS.includes(key)) {
+        throw new CommentsModelError(`Unsupported key '${key}' in CommentsModel.`);
+      }
+    });
+  }
 }

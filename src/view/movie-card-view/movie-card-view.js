@@ -1,8 +1,8 @@
 import SmartView  from '../smart-view.js';
-import createMovieCardTemplate from './movie-card-template';
+import createMovieCardTemplate from './template';
 
 export default class MovieCardView extends SmartView {
-  _data = {movie: null, comments: null}
+  _data = {movie: null}
 
   constructor(movie){
     super();
@@ -11,7 +11,54 @@ export default class MovieCardView extends SmartView {
   }
 
   get template() {
-    return createMovieCardTemplate(this._data.movie);
+    const {movie} = this._data;
+
+    return createMovieCardTemplate({movie});
+  }
+
+  restoreHandlers() {
+    this.#getPoster().addEventListener('click', this.#handlePosterClick);
+    this.#getTitle().addEventListener('click', this.#handleTitleClick);
+    this.#getAddToFavoritesButton().addEventListener('click', this.#handleAddToFavoritesButtonClick);
+    this.#getAddToWatchlistButton().addEventListener('click', this.#handleAddToWatchlistButtonClick);
+    this.#getAlreadyWatchedButton().addEventListener('click', this.#handleAddToAlreadyWatchedButtonClick);
+    this.#getCommentsLink().addEventListener('click', this.#handleCommentsLinkClick);
+  }
+
+  setPosterClickHandler(handler) {
+    this._callback.posterClickHandler = handler;
+
+    this.#getPoster().addEventListener('click', this.#handlePosterClick);
+  }
+
+  setTitleClickHandler(handler) {
+    this._callback.titleClickHandler = handler;
+
+    this.#getTitle().addEventListener('click', this.#handleTitleClick);
+  }
+
+  setAddToFavoritesButtonClickHandler(handler) {
+    this._callback.addToFavoritesButtonClickHandler = handler;
+
+    this.#getAddToFavoritesButton().addEventListener('click', this.#handleAddToFavoritesButtonClick);
+  }
+
+  setAddToAlreadyWatchedButtonClickHandler(handler) {
+    this._callback.addToAlreadyWatchedButtonClickHandler = handler;
+
+    this.#getAlreadyWatchedButton().addEventListener('click', this.#handleAddToAlreadyWatchedButtonClick);
+  }
+
+  setAddToWatchlistButtonClickHandler(handler) {
+    this._callback.addToWatchlistButtonClickHandler = handler;
+
+    this.#getAddToWatchlistButton().addEventListener('click', this.#handleAddToWatchlistButtonClick);
+  }
+
+  setCommentsLinkClickHandler(handler) {
+    this._callback.commentsLinkClickHandler = handler;
+
+    this.#getCommentsLink().addEventListener('click', this.#handleCommentsLinkClick);
   }
 
   #getTitle = () => this.elem.querySelector('.film-card__title');
@@ -26,82 +73,41 @@ export default class MovieCardView extends SmartView {
 
   #getCommentsLink = () => this.elem.querySelector('.film-card__comments');
 
-  setPosterClickHandler(handler) {
-    this._callback.posterClickHandler = handler;
-
-    this.#getPoster().addEventListener('click', this.#posterClickHandler);
-  }
-
-  setTitleClickHandler(handler) {
-    this._callback.titleClickHandler = handler;
-
-    this.#getTitle().addEventListener('click', this.#titleClickHandler);
-  }
-
-  setAddToFavoritesButtonClickHandler(handler) {
-    this._callback.addToFavoritesButtonClickHandler = handler;
-
-    this.#getAddToFavoritesButton().addEventListener('click', this.#addToFavoritesButtonClickHandler);
-  }
-
-  setAddToAlreadyWatchedButtonClickHandler(handler) {
-    this._callback.addToAlreadyWatchedButtonClickHandler = handler;
-
-    this.#getAlreadyWatchedButton().addEventListener('click', this.#addToAlreadyWatchedButtonClickHandler);
-  }
-
-  setAddToWatchlistButtonClickHandler(handler) {
-    this._callback.addToWatchlistButtonClickHandler = handler;
-
-    this.#getAddToWatchlistButton().addEventListener('click', this.#addToWatchlistButtonClickHandler);
-  }
-
-  setCommentsLinkClickHandler(handler) {
-    this._callback.commentsLinkClickHandler = handler;
-
-    this.#getCommentsLink().addEventListener('click', this.#commentsLinkClickHandler);
-  }
-
-  #posterClickHandler = (evt) => {
+  #handlePosterClick = (evt) => {
     evt.preventDefault();
+
+    if (this._callback.posterClickHandler === undefined) {
+      return;
+    }
 
     this._callback.posterClickHandler();
   }
 
-  #titleClickHandler = (evt) => {
+  #handleTitleClick = (evt) => {
     evt.preventDefault();
 
     this._callback.titleClickHandler();
   }
 
-  #addToFavoritesButtonClickHandler = (evt) => {
+  #handleAddToFavoritesButtonClick = (evt) => {
     evt.preventDefault();
 
     this._callback.addToFavoritesButtonClickHandler();
   }
 
-  #addToAlreadyWatchedButtonClickHandler = (evt) => {
+  #handleAddToAlreadyWatchedButtonClick = (evt) => {
     evt.preventDefault();
 
     this._callback.addToAlreadyWatchedButtonClickHandler();
   }
 
-  #addToWatchlistButtonClickHandler = (evt) => {
+  #handleAddToWatchlistButtonClick = (evt) => {
     evt.preventDefault();
 
     this._callback.addToWatchlistButtonClickHandler();
   }
 
-  #commentsLinkClickHandler = () => {
+  #handleCommentsLinkClick = () => {
     this._callback.commentsLinkClickHandler();
-  }
-
-  restoreHandlers() {
-    this.#getPoster().addEventListener('click', this.#posterClickHandler);
-    this.#getTitle().addEventListener('click', this.#titleClickHandler);
-    this.#getAddToFavoritesButton().addEventListener('click', this.#addToFavoritesButtonClickHandler);
-    this.#getAddToWatchlistButton().addEventListener('click', this.#addToWatchlistButtonClickHandler);
-    this.#getAlreadyWatchedButton().addEventListener('click', this.#addToAlreadyWatchedButtonClickHandler);
-    this.#getCommentsLink().addEventListener('click', this.#commentsLinkClickHandler);
   }
 }

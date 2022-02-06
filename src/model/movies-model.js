@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 
-import AbstractModel, {ChangeType} from './abstract-model';
+import AbstractModel, {ChangeTarget, ChangeType} from './abstract-model';
 
 export const MOVIE_DATA_FIELDS = [
   'poster',
@@ -52,6 +52,12 @@ const watchedMoviesAmountByUserRank = {
   [UserRank.MOVIE_BUFF]: 21,
 };
 
+export const MoviesModelEvent = {
+  SET_MOVIES: 'setMovies',
+  UPDATE_MOVIE_USER_DATA: 'updateMovieUserData',
+  UPDATE_MOVIE_COMMENTS: 'updateMovieComments',
+};
+
 export default class MoviesModel extends AbstractModel {
   #apiService = null;
 
@@ -61,6 +67,10 @@ export default class MoviesModel extends AbstractModel {
     this.#apiService = apiService;
   }
 
+  get movies() {
+    return Object.values(this._data || {});
+  }
+
   set movies(movies) {
     this._data = movies.reduce((map, movie) => {
       map[movie.id] = movie;
@@ -68,16 +78,26 @@ export default class MoviesModel extends AbstractModel {
       return map;
     }, {});
 
-    this._notifyObservers(ChangeType.MAJOR);
+    this._notifyObservers([MoviesModelEvent.SET_MOVIES], ChangeType.MAJOR);
   }
 
-  get movies() {
-    return Object.values(this._data || {});
+  async init() {
+    const movies = await this.#apiService.getMovies();
 
-    //return [];
+    this.movies = movies.map(this.#adaptMovieToApp);
   }
 
-  getMovies({filter, sorting}) {
+  getMovie(movieId) {
+    const movie = this._data[movieId];
+
+    if (movie === undefined) {
+      throw new MoviesModelError(`Movie with ID '${movieId}' not found.`);
+    }
+
+    return movie;
+  }
+
+  getMovies({filter, sorting} = {}) {
     let movies = this.movies;
 
     switch (filter) {
@@ -151,72 +171,39 @@ export default class MoviesModel extends AbstractModel {
     return movies;
   }
 
-  async init() {
-    try {
-      const movies = await this.#apiService.getMovies();
-
-      this.movies = movies.map(this.#adaptMovie);
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error(error);
-
-      this.movies = [];
-    }
-  }
-
-  updateMovie(id, movieData) {
+  updateMovie = async (movieId, movieData, {target = ChangeTarget.SERVICE} = {}) => {
     this.#validateMovieData(movieData);
 
-    const movie = this.getMovie(id);
-
-    if (movie === undefined) {
-      throw new MoviesModelError(`Movie with ID '${id}' not found.`);
-    }
-
-    this._data[id] = {...movie, ...movieData};
-
-    this._notifyObservers(ChangeType.MINOR);
-  }
-
-  #validateMovieData = (movieData) => {
-    Object.keys(movieData).forEach((key) => {
-      if (!MOVIE_DATA_FIELDS.includes(key)) {
-        throw new MoviesModelError(`Unsupported key '${key}' in MoviesModel.`);
-      }
-    });
-  }
-
-  getMovie(movieId) {
-    const movie = this._data[movieId];
+    const movie = this.getMovie(movieId);
 
     if (movie === undefined) {
       throw new MoviesModelError(`Movie with ID '${movieId}' not found.`);
     }
 
-    return movie;
-  }
+    if (target === ChangeTarget.SERVICE) {
+      const updatedMovie = await this.#apiService.updateMovie(movieId, this.#adaptMovieToApiService({...movie, ...movieData}));
 
-  #adaptMovie = (movie) => ({
-    title: movie.film_info.title,
-    id: movie.id,
-    alternativeTitle: movie.film_info.alternative_title,
-    releaseDate: new Date(movie.film_info.release.date),
-    description: movie.film_info.description,
-    duration: movie.film_info.runtime,
-    genre: movie.film_info.genre,
-    comments: movie.comments,
-    isWatchlist: movie.user_details.watchlist,
-    isWatched: movie.user_details.already_watched,
-    isFavorite: movie.user_details.favorite,
-    watchingDate: movie.user_details.watching_date === null ? null : new Date(movie.user_details.watching_date),
-    ageRating: movie.film_info.age_rating,
-    director: movie.film_info.director,
-    writers: movie.film_info.writers,
-    actors: movie.film_info.actors,
-    country: movie.film_info.release.release_country,
-    poster: movie.film_info.poster,
-    rating: movie.film_info.total_rating,
-  })
+      this._data[movieId] = this.#adaptMovieToApp(updatedMovie);
+    }
+
+    if (target === ChangeTarget.CACHE) {
+      this._data[movieId] = {...this._data[movieId], ...movieData};
+    }
+
+    const MoviesModelEvents = [];
+
+    Object.keys(movieData).forEach((key) => {
+      if (key === 'comments') {
+        MoviesModelEvents.push(MoviesModelEvent.UPDATE_MOVIE_COMMENTS);
+      }
+
+      if (['isWatched', 'isWatchlist', 'isFavorite'].includes(key)) {
+        MoviesModelEvents.push(MoviesModelEvent.UPDATE_MOVIE_USER_DATA);
+      }
+    });
+
+    this._notifyObservers(MoviesModelEvents, ChangeType.MINOR);
+  }
 
   getMoviesStatistic({filter} = {}) {
     const watchedMovies = this.getMovies({filter});
@@ -264,4 +251,62 @@ export default class MoviesModel extends AbstractModel {
 
     return userRank;
   }
+
+  #validateMovieData = (movieData) => {
+    Object.keys(movieData).forEach((key) => {
+      if (!MOVIE_DATA_FIELDS.includes(key)) {
+        throw new MoviesModelError(`Unsupported key '${key}' in MoviesModel.`);
+      }
+    });
+  }
+
+  #adaptMovieToApp = (movie) => ({
+    title: movie.film_info.title,
+    id: movie.id,
+    alternativeTitle: movie.film_info.alternative_title,
+    releaseDate: new Date(movie.film_info.release.date),
+    description: movie.film_info.description,
+    duration: movie.film_info.runtime,
+    genre: movie.film_info.genre,
+    comments: movie.comments,
+    isWatchlist: movie.user_details.watchlist,
+    isWatched: movie.user_details.already_watched,
+    isFavorite: movie.user_details.favorite,
+    watchingDate: movie.user_details.watching_date === null ? null : new Date(movie.user_details.watching_date),
+    ageRating: movie.film_info.age_rating,
+    director: movie.film_info.director,
+    writers: movie.film_info.writers,
+    actors: movie.film_info.actors,
+    country: movie.film_info.release.release_country,
+    poster: movie.film_info.poster,
+    rating: movie.film_info.total_rating,
+  })
+
+  #adaptMovieToApiService = (movie) => ({
+    id: movie.id,
+    ['film_info']: {
+      title: movie.title,
+      ['alternative_title']: movie.alternativeTitle,
+      ['total_rating']: movie.rating,
+      poster: movie.poster,
+      ['age_rating']: movie.ageRating,
+      director: movie.director,
+      writers: movie.writers,
+      actors: movie.actors,
+      release: {
+        date: movie.releaseDate.toISOString(),
+        ['release_country']: movie.country,
+      },
+      runtime: movie.duration,
+      genre: movie.genre,
+      description: movie.description,
+    },
+    ['user_details']: {
+      watchlist: movie.isWatchlist,
+      ['already_watched']: movie.isWatched,
+      ['watching_date']: movie.watchingDate === null ? null : movie.watchingDate.toISOString(),
+      favorite: movie.isFavorite,
+    },
+    comments: movie.comments,
+  });
 }

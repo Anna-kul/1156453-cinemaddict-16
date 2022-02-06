@@ -1,11 +1,8 @@
 import {render, RenderPosition, replace, remove} from '../utils/render.js';
 import MovieCardView from '../view/movie-card-view/movie-card-view.js';
 import MoviePopupView from '../view/movie-popup-view/movie-popup-view.js';
-import {ChangeType} from '../model/abstract-model';
+import {ChangeTarget, ChangeType} from '../model/abstract-model';
 
-/**
- * Имя класса для body, с помощью которого убирается вертикальная полоса прокрутки
- */
 const HIDE_OVERFLOW_CLASS_NAME = 'hide-overflow';
 export class MoviePresenter {
   #root = null;
@@ -29,7 +26,7 @@ export class MoviePresenter {
 
     const prevMovieCardView = this.#movieCardView;
 
-    this.#moviesModel.addObserver(this.#handleMoviesModelChange);
+    this.#moviesModel.addObserver(this.#handleMoviesModelMinorChange);
     this.#commentsModel.addObserver(this.#handleCommentsModelChange);
 
     this.#movieCardView = new MovieCardView(this.#movie);
@@ -40,8 +37,6 @@ export class MoviePresenter {
     this.#movieCardView.setAddToAlreadyWatchedButtonClickHandler(this.#handleAddToAlreadyWatchedButtonClick);
     this.#movieCardView.setAddToWatchlistButtonClickHandler(this.#handleAddToWatchlistButtonClick);
     this.#movieCardView.setCommentsLinkClickHandler(this.#handleMoviePopupOpenerClick);
-
-    this.#moviePopupView = new MoviePopupView(this.#movie);
 
     if (prevMovieCardView === null) {
       render(this.#root, this.#movieCardView, RenderPosition.BEFOREEND);
@@ -54,7 +49,7 @@ export class MoviePresenter {
 
   destroy = () => {
     remove(this.#movieCardView);
-    this.#moviesModel.removeObserver(this.#handleMoviesModelChange);
+    this.#moviesModel.removeObserver(this.#handleMoviesModelMinorChange);
     this.#commentsModel.removeObserver(this.#handleCommentsModelChange);
     this.#removeMoviePopupView();
   }
@@ -65,29 +60,7 @@ export class MoviePresenter {
     document.body.classList.remove(HIDE_OVERFLOW_CLASS_NAME);
   }
 
-  #handleMoviePopupOpenerClick = () => {
-    this.#moviePopupView.setCloseHandler(this.#handleMoviePopupClose);
-    this.#moviePopupView.setChangeHandler(this.#handleMoviePopupChange);
-    this.#moviePopupView.setAddToFavoritesButtonClickHandler(this.#handleAddToFavoritesButtonClick);
-    this.#moviePopupView.setAddToAlreadyWatchedButtonClickHandler(this.#handleAddToAlreadyWatchedButtonClick);
-    this.#moviePopupView.setAddToWatchlistButtonClickHandler(this.#handleAddToWatchlistButtonClick);
-    this.#moviePopupView.setSubmitHandler(this.#handleMoviePopupSubmit);
-    this.#moviePopupView.setDeleteCommentButtonClickHandler(this.#handleDeleteCommentButtonClick);
-
-    render(document.body, this.#moviePopupView, RenderPosition.BEFOREEND);
-
-    document.body.classList.add(HIDE_OVERFLOW_CLASS_NAME);
-
-    this.#commentsModel.getMovieComments(this.#movie.id).then(() => {
-      this.#moviePopupView.updateData({isLoading: false, comments: this.#commentsModel.comments});
-    });
-  }
-
-  #handleMoviePopupClose = () => {
-    this.#removeMoviePopupView();
-  }
-
-  #handleMoviesModelChange = (data, changeType) => {
+  #handleMoviesModelMinorChange = (data, _, changeType) => {
     if (changeType !== ChangeType.MINOR) {
       return;
     }
@@ -111,22 +84,27 @@ export class MoviePresenter {
     this.#movie = movie;
 
     this.#movieCardView.updateData({movie});
-    this.#moviePopupView.updateData({movie});
+
+    if (this.#moviePopupView !== null) {
+      this.#moviePopupView.updateData({movie, comments: this.#commentsModel.comments});
+    }
   }
 
-  /**
-   * TODO: Продебажить добавление комментария, добавить экранировние с помощь he
-   */
+
   #handleCommentsModelChange = (_, changeType) => {
-    if (changeType !== ChangeType.MINOR) {
+    if (changeType !== ChangeType.MAJOR || this.#moviePopupView === null) {
       return;
     }
 
-    const movieComments = this.#commentsModel.comments
-      .filter(({id: currentCommentId}) => this.#movie.comments.includes(currentCommentId));
+    const commentIds = this.#commentsModel.comments.map(({id: currentMovieId}) => currentMovieId);
 
-    this.#moviesModel.updateMovie(this.#movie.id, {comments: movieComments.map(({id}) => id)});
-    this.#moviePopupView.updateData({comments: movieComments});
+    this.#moviesModel.updateMovie(
+      this.#movie.id,
+      {comments: commentIds},
+      {target: ChangeTarget.CACHE}
+    );
+
+    this.#moviePopupView.updateData({comments: this.#commentsModel.comments});
   }
 
   #handleAddToFavoritesButtonClick = () => {
@@ -143,7 +121,7 @@ export class MoviePresenter {
 
   #handleDeleteCommentButtonClick = async (commentId) => {
     try {
-      this.#moviePopupView.updateData({isCommentDeleting: true});
+      this.#moviePopupView.updateData({deletingCommentId: commentId});
 
       await this.#commentsModel.deleteComment(commentId);
 
@@ -153,23 +131,48 @@ export class MoviePresenter {
     }
   }
 
-  #handleMoviePopupChange = (commentData) => {
+  #handleMoviePopupOpenerClick = () => {
+    this.#moviePopupView = new MoviePopupView(this.#movie);
+
+    this.#moviePopupView.setCloseHandler(this.#handleMoviePopupClose);
+    this.#moviePopupView.setCommentChangeHandler(this.#handleCommentChange);
+    this.#moviePopupView.setAddToFavoritesButtonClickHandler(this.#handleAddToFavoritesButtonClick);
+    this.#moviePopupView.setAddToAlreadyWatchedButtonClickHandler(this.#handleAddToAlreadyWatchedButtonClick);
+    this.#moviePopupView.setAddToWatchlistButtonClickHandler(this.#handleAddToWatchlistButtonClick);
+    this.#moviePopupView.setCommentSubmitHandler(this.#handleCommentSubmit);
+    this.#moviePopupView.setDeleteCommentButtonClickHandler(this.#handleDeleteCommentButtonClick);
+
+    render(document.body, this.#moviePopupView, RenderPosition.BEFOREEND);
+
+    document.body.classList.add(HIDE_OVERFLOW_CLASS_NAME);
+
+    this.#commentsModel.getMovieComments(this.#movie.id).then(() => {
+      this.#moviePopupView.updateData({isLoading: false, comments: this.#commentsModel.comments});
+    });
+  }
+
+  #handleMoviePopupClose = () => {
+    this.#removeMoviePopupView();
+  }
+
+  #handleCommentChange = (commentData) => {
     this.#moviePopupView.updateData(commentData);
   }
 
-  #handleMoviePopupSubmit = async ({commentText, commentEmoji}) => {
+  #handleCommentSubmit = async ({commentText, commentEmoji}) => {
     try {
-      const localComment = {
+      const commentData = {
         comment: commentText,
         emotion: commentEmoji,
         date: new Date().toISOString(),
       };
 
-      await this.#commentsModel.addComment(this.#movie.id, localComment);
+      this.#moviePopupView.updateData({isCommentSubmitting: true});
 
-      this.#moviePopupView.updateData({comment: {text: '', emoji: ''}});
+      await this.#commentsModel.addComment(this.#movie.id, commentData);
+      this.#moviePopupView.updateData({commentText: '', commentEmoji: '', isCommentSubmitting: false});
     } catch {
-      this.#moviePopupView.updateData({isCommentFormShaking: true});
+      this.#moviePopupView.updateData({isCommentFormShaking: true, isCommentSubmitting: false});
     }
   }
 }

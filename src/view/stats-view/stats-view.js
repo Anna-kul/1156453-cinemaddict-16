@@ -1,9 +1,11 @@
 import Chart from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 
-import createStatsTemplate from './template';
-import SmartView  from '../smart-view.js';
+import {Color} from '../../constants';
 import {Filter} from '../../model/movies-model';
+import SmartView  from '../smart-view.js';
+
+import createStatsTemplate from './template';
 
 export default class StatsView extends SmartView {
   #chart = null;
@@ -17,40 +19,12 @@ export default class StatsView extends SmartView {
     this._data.userRank = userRank;
     this._data.moviesStatistic = moviesStatistic;
 
-    window.StatsView = this;
-
     this.renderChart();
   }
 
   get template() {
     const {userRank, moviesStatistic, activeStatisticFilter} = this._data;
     return createStatsTemplate({userRank, moviesStatistic, activeStatisticFilter});
-  }
-
-  restoreHandlers() {
-    this.#getFilters().addEventListener('change', this.#handleFiltersChange);
-  }
-
-    #getFilters = () => this.elem.querySelector('.statistic__filters');
-
-    #getChart = () => this.elem.querySelector('.statistic__chart');
-
-    setFiltersChangeHandler(handler) {
-      this._callback.filtersChangeHandler = handler;
-
-      this.#getFilters().addEventListener('change', this.#handleFiltersChange);
-    }
-
-  #handleFiltersChange = (evt) => {
-    evt.preventDefault();
-
-    if (this._callback.filtersChangeHandler === undefined) {
-      return;
-    }
-
-    const {statisticFilter} = Object.fromEntries(new FormData(evt.currentTarget).entries());
-
-    this._callback.filtersChangeHandler(statisticFilter);
   }
 
   removeElement() {
@@ -61,11 +35,16 @@ export default class StatsView extends SmartView {
     }
 
     clearTimeout(this.#timeoutId);
+
     this.#timeoutId = null;
 
     this.#chart.destroy();
 
     this.#chart = null;
+  }
+
+  restoreHandlers() {
+    this.#getFilters().addEventListener('change', this.#handleFiltersChange);
   }
 
   renderChart = () => {
@@ -79,8 +58,8 @@ export default class StatsView extends SmartView {
           labels: Object.keys(moviesStatistic.viewsByGenre),
           datasets: [{
             data: Object.values(moviesStatistic.viewsByGenre),
-            backgroundColor: '#ffe800',
-            hoverBackgroundColor: '#ffe800',
+            backgroundColor: Color.TURBO,
+            hoverBackgroundColor: Color.TURBO,
             anchor: 'start',
             barThickness: 24,
           }],
@@ -92,7 +71,7 @@ export default class StatsView extends SmartView {
               font: {
                 size: 20,
               },
-              color: '#ffffff',
+              color: Color.WHITE,
               anchor: 'start',
               align: 'start',
               offset: 40,
@@ -101,7 +80,7 @@ export default class StatsView extends SmartView {
           scales: {
             yAxes: [{
               ticks: {
-                fontColor: '#ffffff',
+                fontColor: Color.WHITE,
                 padding: 100,
                 fontSize: 20,
               },
@@ -130,5 +109,27 @@ export default class StatsView extends SmartView {
         },
       });
     }, 1000);
+  }
+
+  #getFilters = () => this.elem.querySelector('.statistic__filters');
+
+  #getChart = () => this.elem.querySelector('.statistic__chart');
+
+  setFiltersChangeHandler(handler) {
+    this._callback.filtersChangeHandler = handler;
+
+    this.#getFilters().addEventListener('change', this.#handleFiltersChange);
+  }
+
+  #handleFiltersChange = (evt) => {
+    evt.preventDefault();
+
+    if (this._callback.filtersChangeHandler === undefined) {
+      return;
+    }
+
+    const {statisticFilter} = Object.fromEntries(new FormData(evt.currentTarget).entries());
+
+    this._callback.filtersChangeHandler(statisticFilter);
   }
 }

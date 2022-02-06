@@ -3,6 +3,11 @@ export const ChangeType = {
   MAJOR: 'major',
 };
 
+export const ChangeTarget = {
+  SERVICE: 'service',
+  CACHE: 'cache',
+};
+
 export default class AbstractModel {
     #observers = new Set();
     _data = null;
@@ -13,8 +18,6 @@ export default class AbstractModel {
       }
 
       this._data = data;
-
-      window[this.constructor.name] = this;
     }
 
     addObserver(observer) {
@@ -25,9 +28,9 @@ export default class AbstractModel {
       this.#observers.delete(observer);
     }
 
-    _notifyObservers(changeType) {
+    _notifyObservers(events, changeType) {
       this.#observers.forEach((observer) => {
-        observer(this._data, changeType);
+        observer(this._data, events, changeType);
       });
     }
 }

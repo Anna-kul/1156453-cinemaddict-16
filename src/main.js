@@ -12,6 +12,7 @@ import FiltersModel from './model/filters-model.js';
 import ApiService from './service/api-service';
 import ScreensModel from './model/screens-model';
 import SortingsModel from './model/sortings-model';
+import FooterPresenter from './presenter/footer-presenter';
 
 const siteMainElement = document.querySelector('.main');
 const header = document.querySelector('.header');
@@ -45,16 +46,9 @@ const navigationMenuPresenter = new NavigationMenuPresenter(
   screensModel,
 );
 navigationMenuPresenter.init();
+const footerPresenter = new FooterPresenter(siteMainElement, moviesModel);
+footerPresenter.init();
 
 moviesModel.init().then(() => {
   sortingMenuPresenter.init();
 });
-
-/**
- * TODO:
- * 1. Доработка модели для отправки обновленных данных фильма, в т. ч. создание коментария
- * 2. Отображение статистики
- * 3. Унифицировать метод сортировки и фильтрации
- * 4. Посмотреть баг с последовательным переходом по фильтрам (не отображаются фильмы согласно новому фильтру)
- * 5. Экранизация ввода комментария
- */

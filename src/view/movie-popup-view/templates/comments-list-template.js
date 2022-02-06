@@ -1,6 +1,6 @@
 import createCommentTemplate from './comment-template';
 
-const createCommentsListTemplate = (isLoading, comments, isCommentDeleting, shakingCommentId) => {
+const createCommentsListTemplate = (isLoading, comments, deletingCommentId, shakingCommentId) => {
   if (isLoading) {
     return 'Loading...';
   }
@@ -11,7 +11,7 @@ const createCommentsListTemplate = (isLoading, comments, isCommentDeleting, shak
 
   return (
     `<ul class="film-details__comments-list">
-      ${comments.reduce((html, currentComment) => html + createCommentTemplate(currentComment, isCommentDeleting, currentComment.id === shakingCommentId), '')}
+      ${comments.reduce((html, currentComment) => html + createCommentTemplate(currentComment, currentComment.id === deletingCommentId, currentComment.id === shakingCommentId), '')}
     </ul>`
   );
 };

@@ -7,3 +7,8 @@ export const Category = {
   WATCHED: 'watched',
   FAVORITE: 'favorite',
 };
+
+export const Color = {
+  WHITE: '#ffffff',
+  TURBO: '#ffe800',
+};

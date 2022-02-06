@@ -5,9 +5,11 @@ import {Category} from '../../constants';
 
 dayjs.extend(duration);
 
+const MAX_DESCRIPTION_LENGTH = 139;
+
 const FILM_CARD_CONTROLS_ITEM_ACTIVE_CLASS_NAME = 'film-card__controls-item--active';
 
-const createMovieCardTemplate = (movie) => {
+const createMovieCardTemplate = ({movie}) => {
   const watchlistClassName = movie.isWatchlist ? FILM_CARD_CONTROLS_ITEM_ACTIVE_CLASS_NAME : '';
   const watchedClassName = movie.isWatched ? FILM_CARD_CONTROLS_ITEM_ACTIVE_CLASS_NAME : '';
   const favoriteClassName = movie.isFavorite ? FILM_CARD_CONTROLS_ITEM_ACTIVE_CLASS_NAME : '';
@@ -22,8 +24,12 @@ const createMovieCardTemplate = (movie) => {
             <span class="film-card__duration">${dayjs.duration(movie.duration, 'minutes').format('H[h] m[m]')}</span>
             <span class="film-card__genre">${movie.genre.join(', ')}</span>
           </p>
-          <img src="${movie.poster}" alt="" class="film-card__poster">
-          <p class="film-card__description">${movie.description}</p>
+          <img src="${movie.poster}" alt='Poster of the "${movie.title}"' class="film-card__poster">
+          <p class="film-card__description">${
+    movie.description.length > MAX_DESCRIPTION_LENGTH
+      ? `${movie.description.slice(0, MAX_DESCRIPTION_LENGTH)}...`
+      : movie.description
+    }</p>
           <span class="film-card__comments">${movie.comments.length} comments</span>
         </a>
         <div class="film-card__controls">
