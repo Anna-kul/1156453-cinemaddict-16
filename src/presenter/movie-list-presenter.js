@@ -1,13 +1,13 @@
 import MovieListView from '../view/movie-list-view.js';
 import BtnShowMoreView from '../view/btn-show-more-view.js';
 import {render, RenderPosition, remove} from '../utils/render.js';
-import {MoviePresenter} from './movie-presenter.js';
+import MovieCardPresenter from './movie-card-presenter';
 import LoadingView from '../view/loading-view.js';
 import NoMoviesStubView, {NoMoviesStubViewVariant} from '../view/no-movies-stub-view/no-movies-stub-view.js';
 import {Screen} from '../model/screens-model';
 import {Filter, MoviesModelEvent} from '../model/movies-model';
 import {ChangeType} from '../model/abstract-model';
-
+import MoviePopupPresenter from './movie-popup-presenter';
 
 const AVAILABLE_SCREENS = [
   Screen.ALL_MOVIES,
@@ -28,20 +28,20 @@ const noMoviesStubViewVariantByFilter = {
 export default class MovieListPresenter {
     #root = null;
 
-    #initedMoviePresenters = 0;
-
     #btnShowMoreView = null;
     #movieListView = new MovieListView();
     #loadingView = new LoadingView();
     #noMoviesStubView = null;
 
-    #moviePresenter = new Map();
+    #movieCardPresenters = new Map();
 
     #moviesModel = null;
     #commentsModel = null;
     #filtersModel = null;
     #sortingsModel = null;
     #screensModel = null;
+
+    #moviePopupPresenter = null;
 
     constructor(root, moviesModel, commentsModel, filtersModel, sortingsModel, screensModel) {
       this.#root = root;
@@ -50,6 +50,8 @@ export default class MovieListPresenter {
       this.#filtersModel = filtersModel;
       this.#sortingsModel = sortingsModel;
       this.#screensModel = screensModel;
+
+      this.#moviePopupPresenter = new MoviePopupPresenter(document.body, this.#moviesModel, this.#commentsModel);
 
       this.#noMoviesStubView = new NoMoviesStubView({variant: this.#selectNoMoviesStubViewVariant()});
     }
@@ -99,14 +101,12 @@ export default class MovieListPresenter {
     }
 
     #clear = () => {
-      this.#moviePresenter.forEach((presenter) => presenter.destroy());
-      this.#moviePresenter.clear();
+      this.#movieCardPresenters.forEach((presenter) => presenter.destroy());
+      this.#movieCardPresenters.clear();
       remove(this.#btnShowMoreView);
       remove(this.#loadingView);
       remove(this.#noMoviesStubView);
       remove(this.#movieListView);
-
-      this.#initedMoviePresenters = 0;
     }
 
     #initMoviePresenters = () => {
@@ -116,23 +116,17 @@ export default class MovieListPresenter {
         filter: this.#filtersModel.filter, sorting: this.#sortingsModel.sorting
       });
 
-      movies.forEach((movie, i) => {
-        if (i >= MOVIES_PER_LOAD_AMOUNT) {
-          return;
-        }
-
-        const moviePresenter = new MoviePresenter(
+      movies.slice(this.#movieCardPresenters.size, this.#movieCardPresenters.size + MOVIES_PER_LOAD_AMOUNT).forEach((movie) => {
+        const movieCardPresenter = new MovieCardPresenter(
           filmListContainer,
           this.#moviesModel,
-          this.#commentsModel,
+          this.#moviePopupPresenter,
         );
 
-        moviePresenter.init(movies[i]);
+        movieCardPresenter.init(movie);
 
-        this.#moviePresenter.set(movies[i].id, moviePresenter);
+        this.#movieCardPresenters.set(movie.id, movieCardPresenter);
       });
-
-      this.#initedMoviePresenters += MOVIES_PER_LOAD_AMOUNT;
     }
 
     #initBtnShowMoreView = () => {
@@ -186,7 +180,7 @@ export default class MovieListPresenter {
         filter: this.#filtersModel.filter, sorting: this.#sortingsModel.sorting
       });
 
-      if(this.#initedMoviePresenters >= movies.length){
+      if (this.#movieCardPresenters.size >= movies.length){
         remove(this.#btnShowMoreView);
       }
     }
