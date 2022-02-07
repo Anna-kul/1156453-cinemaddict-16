@@ -241,8 +241,6 @@ export default class MoviePopupView extends SmartView {
       return;
     }
 
-    evt.stopPropagation();
-
     this._callback.closeHandler();
   }
 

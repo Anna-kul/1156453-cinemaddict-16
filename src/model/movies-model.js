@@ -13,6 +13,7 @@ export const MOVIE_DATA_FIELDS = [
   'comments',
   'isWatchlist',
   'isWatched',
+  'watchingDate',
   'isFavorite',
   'ageRating',
   'director',
